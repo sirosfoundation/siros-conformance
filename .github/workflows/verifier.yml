@@ -13,6 +13,13 @@ on:
         required: false
         default: ''
         type: string
+      image-overrides:
+        description: 'JSON map of service→tag overrides, e.g. {"vc-verifier":"pr-55"}'
+        required: false
+        default: ''
+        type: string
+  repository_dispatch:
+    types: [conformance-verifier]
   schedule:
     - cron: '0 6 * * 1'  # Weekly Monday 06:00 UTC
   push:
@@ -39,6 +46,14 @@ jobs:
 
       - name: Add /etc/hosts entry
         run: echo "127.0.0.1 localhost.emobix.co.uk" | sudo tee -a /etc/hosts
+
+      - name: Apply image overrides
+        run: |
+          OVERRIDES='${{ inputs.image-overrides || toJSON(github.event.client_payload.image-overrides) }}'
+          if [ -n "$OVERRIDES" ] && [ "$OVERRIDES" != '""' ] && [ "$OVERRIDES" != 'null' ]; then
+            eval "$(node scripts/parse-deps.mjs --json "$OVERRIDES")"
+            node scripts/parse-deps.mjs --json "$OVERRIDES" --env-file >> $GITHUB_ENV
+          fi
 
       - name: Pull images
         run: |
@@ -127,10 +142,15 @@ jobs:
 
   post-summary:
     needs: verifier-conformance
-    if: always() && (inputs.target-repo != '' || github.event_name == 'schedule')
+    if: |
+      always() && (
+        inputs.target-repo != '' ||
+        github.event.client_payload.target-repo != '' ||
+        github.event_name == 'schedule'
+      )
     uses: ./.github/workflows/post-summary.yml
     with:
-      target-repo: ${{ inputs.target-repo || '' }}
-      target-pr: ${{ inputs.target-pr || '' }}
+      target-repo: ${{ inputs.target-repo || github.event.client_payload.target-repo || '' }}
+      target-pr: ${{ inputs.target-pr || github.event.client_payload.target-pr || '' }}
     secrets:
       pr-token: ${{ secrets.CONFORMANCE_PR_TOKEN }}

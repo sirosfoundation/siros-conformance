@@ -4,7 +4,7 @@
 
 services:
   go-trust-allow:
-    image: ghcr.io/sirosfoundation/go-trust:latest
+    image: ${GO_TRUST_IMAGE:-ghcr.io/sirosfoundation/go-trust:latest}
     container_name: go-trust-allow
     ports:
       - "9095:6001"

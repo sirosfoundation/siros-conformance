@@ -48,6 +48,74 @@ make down
 | verifier | vc-services + go-trust + conformance-suite | vc-verifier, vc-registry, mongodb, go-trust-allow, conformance (3) |
 | wallet | wallet + go-trust + vc-services + conformance-suite | wallet-frontend, wallet-backend, wallet-registry, go-trust-allow, vc-*, conformance (3) |
 
+## Image overrides (testing PR builds)
+
+All Docker images default to `:latest` but can be overridden to test
+images built from a PR branch.
+
+### Available services
+
+| Service name | Env var | Default image |
+|-------------|---------|---------------|
+| `vc-issuer` | `VC_ISSUER_IMAGE` | `ghcr.io/sirosfoundation/vc-issuer:latest` |
+| `vc-verifier` | `VC_VERIFIER_IMAGE` | `ghcr.io/sirosfoundation/vc-verifier:latest` |
+| `vc-apigw` | `VC_APIGW_IMAGE` | `ghcr.io/sirosfoundation/vc-apigw:latest` |
+| `vc-registry` | `VC_REGISTRY_IMAGE` | `ghcr.io/sirosfoundation/vc-registry:latest` |
+| `vc-mockas` | `VC_MOCKAS_IMAGE` | `ghcr.io/sirosfoundation/vc-mockas:latest` |
+| `go-trust` | `GO_TRUST_IMAGE` | `ghcr.io/sirosfoundation/go-trust:latest` |
+| `wallet-frontend` | `WALLET_FRONTEND_IMAGE` | `ghcr.io/sirosfoundation/wallet-frontend:latest` |
+| `wallet-backend` / `go-wallet-backend` | `WALLET_BACKEND_IMAGE` | `ghcr.io/sirosfoundation/go-wallet-backend:latest` |
+| `wallet-registry` / `go-wallet-registry` | `WALLET_REGISTRY_IMAGE` | `ghcr.io/sirosfoundation/go-wallet-registry:latest` |
+
+### Local override
+
+```bash
+VC_ISSUER_IMAGE=ghcr.io/sirosfoundation/vc-issuer:pr-42 make up-issuer
+```
+
+### Workflow dispatch override
+
+```
+gh workflow run issuer.yml \
+  -f image-overrides='{"vc-issuer":"pr-42"}' \
+  -f target-repo=sirosfoundation/vc \
+  -f target-pr=99
+```
+
+Short tags (`pr-42`, `sha-abc123`) are expanded to the default registry.
+Full image references (`ghcr.io/other-org/image:tag`) are used as-is.
+
+### PR description syntax
+
+PR authors in connected repos can declare dependencies using a
+fenced block in the PR description:
+
+~~~markdown
+```conformance-deps
+vc-issuer: pr-42
+wallet-frontend: sha-abc123
+go-wallet-backend: feature-branch
+```
+~~~
+
+The `parse-deps.mjs` script extracts these and converts them to
+image override environment variables.
+
+### Cross-repo CI trigger (repository_dispatch)
+
+Other repos can trigger conformance tests from their own CI.
+See [`examples/caller-workflow.yml`](examples/caller-workflow.yml) for
+a drop-in template. The flow:
+
+1. PR CI in repo X builds and pushes `ghcr.io/.../service:pr-N`
+2. Caller workflow fires `repository_dispatch` on `siros-conformance`
+3. Conformance tests run with the PR image
+4. Results are posted as a comment on the PR in repo X
+
+Required secrets:
+- `CONFORMANCE_DISPATCH_TOKEN` (in repo X): PAT to trigger dispatch
+- `CONFORMANCE_PR_TOKEN` (in siros-conformance): PAT to comment on PRs
+
 ## Conformance reports
 
 Each test exports an HTML report ZIP via `GET /api/plan/exporthtml/{planId}`

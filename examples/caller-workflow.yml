@@ -1,0 +1,62 @@
+# Trigger conformance tests from another repo's PR CI.
+#
+# Copy this file into your repo as .github/workflows/conformance.yml
+# and adjust the 'Determine profile' step for your service.
+#
+# Prerequisites:
+#   - CONFORMANCE_DISPATCH_TOKEN secret: PAT with repo scope for
+#     sirosfoundation/siros-conformance (to trigger repository_dispatch)
+#
+# How it works:
+#   1. Your repo builds + pushes a PR image (e.g. ghcr.io/.../vc-issuer:pr-42)
+#   2. This workflow fires repository_dispatch on siros-conformance
+#   3. The conformance workflow runs with your PR image
+#   4. Results are posted back as a comment on your PR
+
+name: Conformance Tests
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened]
+
+jobs:
+  trigger-conformance:
+    runs-on: ubuntu-latest
+    # Only run if the PR image was built successfully
+    # (adjust this condition for your CI)
+    if: github.event.pull_request.draft == false
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Determine profile and image
+        id: config
+        run: |
+          # ── Adjust these for your repo ──────────────────────────
+          # SERVICE: the compose service name (see parse-deps.mjs SERVICE_MAP)
+          # PROFILE: which conformance workflow to trigger
+          #   conformance-issuer | conformance-verifier | conformance-wallet
+          SERVICE="vc-issuer"
+          PROFILE="conformance-issuer"
+
+          # Image tag — typically your CI tags PR images as pr-<number>
+          TAG="pr-${{ github.event.pull_request.number }}"
+          IMAGE="ghcr.io/${{ github.repository }}:${TAG}"
+
+          echo "service=${SERVICE}" >> $GITHUB_OUTPUT
+          echo "profile=${PROFILE}" >> $GITHUB_OUTPUT
+          echo "tag=${TAG}" >> $GITHUB_OUTPUT
+          echo "image=${IMAGE}" >> $GITHUB_OUTPUT
+
+      - name: Trigger conformance tests
+        env:
+          GH_TOKEN: ${{ secrets.CONFORMANCE_DISPATCH_TOKEN }}
+        run: |
+          gh api repos/sirosfoundation/siros-conformance/dispatches \
+            -f event_type="${{ steps.config.outputs.profile }}" \
+            -f 'client_payload[target-repo]=${{ github.repository }}' \
+            -f 'client_payload[target-pr]=${{ github.event.pull_request.number }}' \
+            -f 'client_payload[image-overrides]={"${{ steps.config.outputs.service }}":"${{ steps.config.outputs.tag }}"}'
+
+          echo "Triggered ${{ steps.config.outputs.profile }} with ${{ steps.config.outputs.service }}=${{ steps.config.outputs.tag }}"
+          echo "Results will appear as a comment on this PR."
