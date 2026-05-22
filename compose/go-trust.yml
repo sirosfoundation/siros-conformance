@@ -1,0 +1,24 @@
+# go-trust AuthZEN PDP in allow-all mode
+#
+# Required by the wallet to trust issuers/verifiers during conformance testing.
+
+services:
+  go-trust-allow:
+    image: ghcr.io/sirosfoundation/go-trust:latest
+    container_name: go-trust-allow
+    ports:
+      - "9095:6001"
+    command: ["--registry", "always-trusted", "--host", "0.0.0.0", "--port", "6001"]
+    environment:
+      - GO_TRUST_EXTERNAL_URL=http://localhost:9095
+    healthcheck:
+      test: ["CMD", "wget", "-qO", "/dev/null", "http://localhost:6001/healthz"]
+      interval: 3s
+      timeout: 3s
+      retries: 10
+    networks:
+      - conformance-network
+
+networks:
+  conformance-network:
+    driver: bridge

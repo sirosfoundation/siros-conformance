@@ -1,0 +1,24 @@
+{
+  "name": "siros-conformance",
+  "version": "1.0.0",
+  "description": "OpenID Conformance Suite testing for SIROS ID (issuer, verifier, wallet)",
+  "type": "module",
+  "scripts": {
+    "test": "playwright test",
+    "test:issuer": "playwright test specs/conformance/oid4vci-issuer.spec.ts",
+    "test:verifier": "playwright test specs/conformance/oid4vp-verifier.spec.ts",
+    "test:wallet:vci": "playwright test specs/conformance/oid4vci-wallet.spec.ts",
+    "test:wallet:vp": "playwright test specs/conformance/oid4vp-wallet.spec.ts",
+    "test:wallet": "playwright test specs/conformance/oid4vci-wallet.spec.ts specs/conformance/oid4vp-wallet.spec.ts"
+  },
+  "devDependencies": {
+    "@playwright/test": "^1.52.0",
+    "@types/node": "^22.10.0",
+    "dotenv": "^16.4.5",
+    "jose": "^5.9.6",
+    "typescript": "^5.1.6"
+  },
+  "engines": {
+    "node": ">=18"
+  }
+}

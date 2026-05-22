@@ -1,0 +1,76 @@
+# OpenID Conformance Suite
+#
+# Provides the OpenID Foundation Conformance Suite for testing
+# OID4VCI and OID4VP compliance.
+#
+# Prerequisites:
+#   /etc/hosts: 127.0.0.1 localhost.emobix.co.uk
+
+services:
+  conformance-suite-server:
+    image: registry.gitlab.com/openid/conformance-suite:latest
+    container_name: conformance-suite-server
+    environment:
+      - BASE_URL=https://localhost.emobix.co.uk:8443
+      - MONGODB_HOST=conformance-mongodb
+      - SPRING_PROFILES_ACTIVE=
+      - FINTECHLABS_DEVMODE=true
+      - OIDC_GOOGLE_CLIENTID=google-client
+      - OIDC_GOOGLE_SECRET=google-secret
+      - OIDC_GITLAB_CLIENTID=gitlab-client
+      - OIDC_GITLAB_SECRET=gitlab-secret
+    depends_on:
+      conformance-suite-mongodb:
+        condition: service_started
+    networks:
+      conformance-network:
+        aliases:
+          - server
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "500k"
+        max-file: "5"
+
+  conformance-suite-nginx:
+    image: registry.gitlab.com/openid/conformance-suite/nginx:latest
+    container_name: conformance-suite-nginx
+    ports:
+      - "8443:8443"
+    depends_on:
+      - conformance-suite-server
+    networks:
+      - conformance-network
+    healthcheck:
+      test: ["CMD", "curl", "-fsk", "https://localhost:8443/login.html"]
+      interval: 10s
+      timeout: 5s
+      retries: 30
+      start_period: 60s
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "500k"
+        max-file: "5"
+
+  conformance-suite-mongodb:
+    image: mongo:6
+    container_name: conformance-suite-mongodb
+    volumes:
+      - conformance-mongodb-data:/data/db
+    networks:
+      conformance-network:
+        aliases:
+          - conformance-mongodb
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "500k"
+        max-file: "5"
+
+volumes:
+  conformance-mongodb-data:
+
+networks:
+  conformance-network:
+    driver: bridge

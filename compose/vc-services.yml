@@ -1,0 +1,157 @@
+# VC Services (issuer, verifier, apigw, registry, mockas)
+#
+# All images from ghcr.io/sirosfoundation/ — no local builds.
+
+services:
+  mongodb:
+    image: mongo:7.0
+    container_name: vc-mongodb
+    ports:
+      - "27017:27017"
+    volumes:
+      - mongodb-data:/data/db
+    healthcheck:
+      test: ["CMD", "mongosh", "--eval", "db.adminCommand('ping')"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+    networks:
+      - conformance-network
+
+  vc-registry:
+    image: ghcr.io/sirosfoundation/vc-registry:latest
+    container_name: vc-registry
+    ports:
+      - "9004:8080"
+      - "9094:8090"
+    volumes:
+      - ../fixtures/vc-config.yaml:/config.yaml:ro
+      - ../fixtures/vc-pki:/pki:ro
+    environment:
+      - VC_CONFIG_YAML=/config.yaml
+      - SSL_CERT_FILE=/pki/rootCA.crt
+    depends_on:
+      mongodb:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "curl", "-sf", "http://localhost:8080/health"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+      start_period: 30s
+    networks:
+      - conformance-network
+
+  vc-issuer:
+    image: ghcr.io/sirosfoundation/vc-issuer:latest
+    container_name: vc-issuer
+    ports:
+      - "9000:8080"
+      - "9190:8090"
+    volumes:
+      - ../fixtures/vc-config.yaml:/config.yaml:ro
+      - ../fixtures/vc-pki:/pki:ro
+      - ../fixtures/vc-metadata:/metadata:ro
+    environment:
+      - VC_CONFIG_YAML=/config.yaml
+      - SSL_CERT_FILE=/pki/rootCA.crt
+    depends_on:
+      mongodb:
+        condition: service_healthy
+      vc-registry:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "curl", "-sf", "http://localhost:8080/health"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+      start_period: 30s
+    networks:
+      - conformance-network
+
+  vc-verifier:
+    image: ghcr.io/sirosfoundation/vc-verifier:latest
+    container_name: vc-verifier
+    ports:
+      - "9001:8080"
+      - "9091:8090"
+    volumes:
+      - ../fixtures/vc-config.yaml:/config.yaml:ro
+      - ../fixtures/vc-pki:/pki:ro
+      - ../fixtures/vc-metadata:/metadata:ro
+      - ../fixtures/vc-presentation-requests:/presentation_requests:ro
+    environment:
+      - VC_CONFIG_YAML=/config.yaml
+      - SSL_CERT_FILE=/pki/rootCA.crt
+    depends_on:
+      mongodb:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "curl", "-sf", "http://localhost:8080/health"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+      start_period: 30s
+    networks:
+      - conformance-network
+
+  vc-apigw:
+    image: ghcr.io/sirosfoundation/vc-apigw:latest
+    container_name: vc-apigw
+    ports:
+      - "9003:8080"
+    volumes:
+      - ../fixtures/vc-config.yaml:/config.yaml:ro
+      - ../fixtures/vc-pki:/pki:ro
+      - ../fixtures/vc-metadata:/metadata:ro
+    environment:
+      - VC_CONFIG_YAML=/config.yaml
+      - SSL_CERT_FILE=/pki/rootCA.crt
+    depends_on:
+      mongodb:
+        condition: service_healthy
+      vc-issuer:
+        condition: service_healthy
+      vc-registry:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "curl", "-sf", "http://localhost:8080/health"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+      start_period: 30s
+    networks:
+      - conformance-network
+
+  vc-mockas:
+    image: ghcr.io/sirosfoundation/vc-mockas:latest
+    container_name: vc-mockas
+    ports:
+      - "9002:8080"
+    volumes:
+      - ../fixtures/vc-config.yaml:/config.yaml:ro
+      - ../fixtures/vc-pki:/pki:ro
+      - ../fixtures/vc-users:/users:ro
+    environment:
+      - VC_CONFIG_YAML=/config.yaml
+      - SSL_CERT_FILE=/pki/rootCA.crt
+    depends_on:
+      mongodb:
+        condition: service_healthy
+      vc-apigw:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "curl", "-sf", "http://localhost:8080/health"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+      start_period: 30s
+    networks:
+      - conformance-network
+
+volumes:
+  mongodb-data:
+
+networks:
+  conformance-network:
+    driver: bridge

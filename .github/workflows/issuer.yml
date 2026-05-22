@@ -1,0 +1,107 @@
+name: Issuer Conformance
+
+on:
+  workflow_dispatch:
+  schedule:
+    - cron: '0 6 * * 1'  # Weekly Monday 06:00 UTC
+  push:
+    branches: [main]
+    paths:
+      - 'specs/conformance/oid4vci-issuer.spec.ts'
+      - 'helpers/**'
+      - 'configs/conformance/vci-issuer-config.json'
+      - 'compose/vc-services.yml'
+      - 'compose/conformance-suite.yml'
+      - '.github/workflows/issuer.yml'
+
+concurrency:
+  group: issuer-conformance-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  issuer-conformance:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Add /etc/hosts entry
+        run: echo "127.0.0.1 localhost.emobix.co.uk" | sudo tee -a /etc/hosts
+
+      - name: Pull images
+        run: |
+          docker compose -f compose/vc-services.yml -f compose/go-trust.yml -f compose/conformance-suite.yml pull
+
+      - name: Start services
+        run: |
+          docker compose \
+            -f compose/vc-services.yml \
+            -f compose/go-trust.yml \
+            -f compose/conformance-suite.yml \
+            up -d
+          # Wait for services
+          echo "Waiting for VC services..."
+          timeout 120 bash -c 'until curl -sf http://localhost:9003/.well-known/oauth-authorization-server; do sleep 5; done'
+          echo "Waiting for conformance suite..."
+          timeout 180 bash -c 'until curl -fsk https://localhost.emobix.co.uk:8443/login.html; do sleep 10; done'
+          echo "All services ready"
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+
+      - name: Install dependencies
+        run: |
+          npm ci
+          npx playwright install chromium --with-deps
+
+      - name: Run issuer conformance tests
+        run: npx playwright test specs/conformance/oid4vci-issuer.spec.ts
+        env:
+          NODE_TLS_REJECT_UNAUTHORIZED: '0'
+          CONFORMANCE_URL: https://localhost.emobix.co.uk:8443/
+          ISSUER_CONFORMANCE_URL: http://vc-apigw:8080
+          CONFORMANCE_RESULTS_DIR: ./conformance-results
+
+      - name: Upload conformance report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: issuer-conformance-report
+          path: conformance-results/
+          retention-days: 90
+
+      - name: Upload Playwright report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: issuer-playwright-report
+          path: playwright-report/
+          retention-days: 30
+
+      - name: Collect logs on failure
+        if: failure()
+        run: |
+          docker compose \
+            -f compose/vc-services.yml \
+            -f compose/go-trust.yml \
+            -f compose/conformance-suite.yml \
+            logs --tail=200 > docker-logs.txt 2>&1
+
+      - name: Upload docker logs
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: issuer-docker-logs
+          path: docker-logs.txt
+          retention-days: 7
+
+      - name: Stop services
+        if: always()
+        run: |
+          docker compose \
+            -f compose/vc-services.yml \
+            -f compose/go-trust.yml \
+            -f compose/conformance-suite.yml \
+            down -v
