@@ -2,6 +2,17 @@ name: Verifier Conformance
 
 on:
   workflow_dispatch:
+    inputs:
+      target-repo:
+        description: 'Post summary comment to this repo (owner/repo)'
+        required: false
+        default: ''
+        type: string
+      target-pr:
+        description: 'PR number to comment on (empty = latest open PR)'
+        required: false
+        default: ''
+        type: string
   schedule:
     - cron: '0 6 * * 1'  # Weekly Monday 06:00 UTC
   push:
@@ -63,6 +74,15 @@ jobs:
           VERIFIER_CONFORMANCE_URL: http://vc-verifier:8080
           CONFORMANCE_RESULTS_DIR: ./conformance-results
 
+      - name: Generate job summary
+        if: always()
+        run: |
+          if [ -f conformance-results/verifier-summary.json ]; then
+            node scripts/generate-summary.mjs ./conformance-results \
+              --run-url "${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}" \
+              >> $GITHUB_STEP_SUMMARY
+          fi
+
       - name: Upload conformance report
         if: always()
         uses: actions/upload-artifact@v4
@@ -104,3 +124,13 @@ jobs:
             -f compose/go-trust.yml \
             -f compose/conformance-suite.yml \
             down -v
+
+  post-summary:
+    needs: verifier-conformance
+    if: always() && (inputs.target-repo != '' || github.event_name == 'schedule')
+    uses: ./.github/workflows/post-summary.yml
+    with:
+      target-repo: ${{ inputs.target-repo || '' }}
+      target-pr: ${{ inputs.target-pr || '' }}
+    secrets:
+      pr-token: ${{ secrets.CONFORMANCE_PR_TOKEN }}

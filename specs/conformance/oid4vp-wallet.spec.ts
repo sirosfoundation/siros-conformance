@@ -363,9 +363,29 @@ test.describe('OID4VP Wallet Conformance Suite', () => {
           }
 
           // Report results
-          console.log('\n=== VP Wallet Conformance Results ===');
           const passed = results.filter((r) => r.passed);
           const failed = results.filter((r) => !r.passed);
+
+          // Write JSON summary
+          const summary = {
+            profile: 'wallet-vp',
+            plan: VP_PLAN_NAME,
+            planId,
+            variant: variantConfig.name,
+            timestamp: new Date().toISOString(),
+            planDetailUrl: api.getPlanDetailUrl(planId),
+            total: results.length,
+            passed: passed.length,
+            failed: failed.length,
+            modules: results,
+          };
+          fs.mkdirSync(RESULTS_DIR, { recursive: true });
+          fs.writeFileSync(
+            path.join(RESULTS_DIR, 'wallet-vp-summary.json'),
+            JSON.stringify(summary, null, 2)
+          );
+
+          console.log('\n=== VP Wallet Conformance Results ===');
 
           console.log(`Total: ${results.length} | Passed: ${passed.length} | Failed: ${failed.length}`);
 

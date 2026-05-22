@@ -246,9 +246,29 @@ test.describe('OID4VP Verifier/RP Conformance Suite', () => {
         }
 
         // Report results
-        console.log('\n=== Verifier Conformance Results ===');
         const passed = results.filter((r) => r.passed);
         const failed = results.filter((r) => !r.passed);
+
+        // Write JSON summary
+        const summary = {
+          profile: 'verifier',
+          plan: VP_RP_PLAN_NAME,
+          planId,
+          variant: variantConfig.name,
+          timestamp: new Date().toISOString(),
+          planDetailUrl: api.getPlanDetailUrl(planId),
+          total: results.length,
+          passed: passed.length,
+          failed: failed.length,
+          modules: results,
+        };
+        fs.mkdirSync(RESULTS_DIR, { recursive: true });
+        fs.writeFileSync(
+          path.join(RESULTS_DIR, 'verifier-summary.json'),
+          JSON.stringify(summary, null, 2)
+        );
+
+        console.log('\n=== Verifier Conformance Results ===');
 
         console.log(`Total: ${results.length} | Passed: ${passed.length} | Failed: ${failed.length}`);
 

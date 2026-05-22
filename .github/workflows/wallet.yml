@@ -2,6 +2,17 @@ name: Wallet Conformance
 
 on:
   workflow_dispatch:
+    inputs:
+      target-repo:
+        description: 'Post summary comment to this repo (owner/repo)'
+        required: false
+        default: ''
+        type: string
+      target-pr:
+        description: 'PR number to comment on (empty = latest open PR)'
+        required: false
+        default: ''
+        type: string
   schedule:
     - cron: '0 6 * * 1'  # Weekly Monday 06:00 UTC
   push:
@@ -94,6 +105,17 @@ jobs:
           ADMIN_URL: http://localhost:8081
           CONFORMANCE_RESULTS_DIR: ./conformance-results
 
+      - name: Generate job summary
+        if: always()
+        run: |
+          for f in conformance-results/*-summary.json; do
+            [ -f "$f" ] && break
+            exit 0
+          done
+          node scripts/generate-summary.mjs ./conformance-results \
+            --run-url "${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}" \
+            >> $GITHUB_STEP_SUMMARY
+
       - name: Upload conformance reports
         if: always()
         uses: actions/upload-artifact@v4
@@ -137,3 +159,13 @@ jobs:
             -f compose/vc-services.yml \
             -f compose/conformance-suite.yml \
             down -v
+
+  post-summary:
+    needs: wallet-conformance
+    if: always() && (inputs.target-repo != '' || github.event_name == 'schedule')
+    uses: ./.github/workflows/post-summary.yml
+    with:
+      target-repo: ${{ inputs.target-repo || '' }}
+      target-pr: ${{ inputs.target-pr || '' }}
+    secrets:
+      pr-token: ${{ secrets.CONFORMANCE_PR_TOKEN }}

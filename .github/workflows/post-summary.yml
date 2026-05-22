@@ -1,0 +1,128 @@
+name: Post Conformance Summary
+
+# Reusable workflow — called by issuer/verifier/wallet workflows to post
+# a conformance summary comment on a PR in a target repository.
+#
+# Requires a PAT with `repo` scope stored as CONFORMANCE_PR_TOKEN to
+# comment on PRs in other repositories. Falls back to GITHUB_TOKEN
+# for PRs within siros-conformance itself.
+
+on:
+  workflow_call:
+    inputs:
+      results-dir:
+        description: 'Path to conformance-results directory'
+        required: false
+        default: './conformance-results'
+        type: string
+      target-repo:
+        description: 'Target repo for PR comment (owner/repo). Empty = skip PR comment.'
+        required: false
+        default: ''
+        type: string
+      target-pr:
+        description: 'PR number to comment on. Empty = find latest open PR.'
+        required: false
+        default: ''
+        type: string
+      run-url:
+        description: 'URL to the CI run (auto-populated if empty)'
+        required: false
+        default: ''
+        type: string
+    secrets:
+      pr-token:
+        description: 'GitHub token with repo scope for cross-repo PR comments'
+        required: false
+
+jobs:
+  post-summary:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/download-artifact@v4
+        with:
+          pattern: '*-conformance-report'
+          path: ${{ inputs.results-dir }}
+          merge-multiple: true
+
+      - name: Generate markdown summary
+        id: summary
+        run: |
+          RUN_URL="${{ inputs.run-url }}"
+          if [ -z "$RUN_URL" ]; then
+            RUN_URL="${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}"
+          fi
+
+          # Generate summary
+          node scripts/generate-summary.mjs "${{ inputs.results-dir }}" --run-url "$RUN_URL" > /tmp/summary.md
+
+          # Also write to GitHub Actions job summary
+          cat /tmp/summary.md >> $GITHUB_STEP_SUMMARY
+
+          echo "Generated summary:"
+          cat /tmp/summary.md
+
+      - name: Comment on target PR
+        if: inputs.target-repo != '' && inputs.target-pr != ''
+        env:
+          GH_TOKEN: ${{ secrets.pr-token || github.token }}
+        run: |
+          REPO="${{ inputs.target-repo }}"
+          PR="${{ inputs.target-pr }}"
+
+          MARKER="<!-- siros-conformance-summary -->"
+
+          # Check for existing comment to update
+          EXISTING=$(gh api "repos/${REPO}/issues/${PR}/comments" \
+            --jq ".[] | select(.body | contains(\"${MARKER}\")) | .id" \
+            2>/dev/null | head -1)
+
+          BODY=$(cat /tmp/summary.md)
+          BODY="${MARKER}
+          ${BODY}"
+
+          if [ -n "$EXISTING" ]; then
+            echo "Updating existing comment ${EXISTING} on ${REPO}#${PR}"
+            gh api "repos/${REPO}/issues/comments/${EXISTING}" \
+              -X PATCH \
+              -f body="${BODY}"
+          else
+            echo "Creating new comment on ${REPO}#${PR}"
+            gh api "repos/${REPO}/issues/${PR}/comments" \
+              -f body="${BODY}"
+          fi
+
+      - name: Find and comment on latest PR
+        if: inputs.target-repo != '' && inputs.target-pr == ''
+        env:
+          GH_TOKEN: ${{ secrets.pr-token || github.token }}
+        run: |
+          REPO="${{ inputs.target-repo }}"
+
+          PR=$(gh pr list --repo "${REPO}" --state open --limit 1 --json number --jq '.[0].number' 2>/dev/null)
+          if [ -z "$PR" ]; then
+            echo "No open PRs found in ${REPO}, skipping comment"
+            exit 0
+          fi
+
+          MARKER="<!-- siros-conformance-summary -->"
+          EXISTING=$(gh api "repos/${REPO}/issues/${PR}/comments" \
+            --jq ".[] | select(.body | contains(\"${MARKER}\")) | .id" \
+            2>/dev/null | head -1)
+
+          BODY=$(cat /tmp/summary.md)
+          BODY="${MARKER}
+          ${BODY}"
+
+          if [ -n "$EXISTING" ]; then
+            echo "Updating existing comment ${EXISTING} on ${REPO}#${PR}"
+            gh api "repos/${REPO}/issues/comments/${EXISTING}" \
+              -X PATCH \
+              -f body="${BODY}"
+          else
+            echo "Creating new comment on ${REPO}#${PR}"
+            gh api "repos/${REPO}/issues/${PR}/comments" \
+              -f body="${BODY}"
+          fi
