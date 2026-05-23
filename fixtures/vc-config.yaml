@@ -55,7 +55,7 @@ apigw:
           - "ehic"
           - "eduid"
     metadata:
-      path: "/pki/signing_ec_chain.pem"
+      path: "/oauth-metadata.json"
       signing_key_path: "/pki/signing_ec_private.pem"
       signing_chain_path: "/pki/signing_ec_chain.pem"
 
@@ -99,7 +99,7 @@ verifier:
           - "ehic"
           - "eduid"
     metadata:
-      path: "/pki/signing_ec_chain.pem"
+      path: "/oauth-metadata.json"
       signing_key_path: "/pki/signing_ec_private.pem"
       signing_chain_path: "/pki/signing_ec_chain.pem"
 
