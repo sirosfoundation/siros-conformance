@@ -43,15 +43,6 @@ apigw:
     addr: "vc-issuer:8090"
   registry_client:
     addr: "vc-registry:8090"
-  credential_offers:
-    issuer_url: "http://localhost:9003"
-    wallets:
-      local:
-        label: "Local Wallet"
-        redirect_uri: "http://localhost:3000/cb"
-      e2e_test:
-        label: "E2E Test Wallet"
-        redirect_uri: "http://localhost:3000/callback"
   oauth_server:
     token_endpoint: "http://localhost:9003/token"
     clients:
@@ -67,10 +58,6 @@ apigw:
       path: "/pki/signing_ec_chain.pem"
       signing_key_path: "/pki/signing_ec_private.pem"
       signing_chain_path: "/pki/signing_ec_chain.pem"
-  issuer_metadata:
-    path: "/metadata"
-    signing_key_path: "/pki/signing_ec_private.pem"
-    signing_chain_path: "/pki/signing_ec_chain.pem"
 
 # =============================================================================
 # Issuer Service
