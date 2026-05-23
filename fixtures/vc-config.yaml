@@ -33,6 +33,24 @@ common:
       - "kafka0:9092"
 
 # =============================================================================
+# Authentic Sources (required by apigw for vcclient initialization)
+# =============================================================================
+authentic_sources:
+  "http://localhost:9003":
+    country_code: "SE"
+    notification_endpoint:
+      url: "http://vc-mockas:8080/notification"
+    authentic_source_endpoint:
+      url: "http://vc-mockas:8080"
+    signature_service_endpoint:
+      url: "http://vc-issuer:8080"
+    revocation_service_endpoint:
+      url: "http://vc-registry:8080"
+    credential_types:
+      "pid":
+        profile: "sd-jwt-vc"
+
+# =============================================================================
 # API Gateway (apigw)
 # =============================================================================
 apigw:
