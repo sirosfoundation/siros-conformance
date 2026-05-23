@@ -101,20 +101,53 @@ go-wallet-backend: feature-branch
 The `parse-deps.mjs` script extracts these and converts them to
 image override environment variables.
 
+### Triggering from a PR comment (`@conformance`)
+
+The recommended way to run conformance tests from a connected repo is
+via PR comments. Install
+[`examples/conformance-comment.yml`](examples/conformance-comment.yml) into
+your repo's `.github/workflows/` directory. Then, on any PR, add a comment:
+
+```
+@conformance
+```
+
+This triggers **all** profiles with `:latest` images. To be more specific:
+
+```
+@conformance issuer                              # issuer profile only
+@conformance wallet                              # wallet profile only
+@conformance vc-issuer:pr-42                     # auto-detects issuer profile
+@conformance wallet wallet-frontend:pr-111       # explicit profile + override
+@conformance vc-issuer:pr-42 go-trust:sha-abc    # multiple overrides, auto-detect
+```
+
+Image names are bare service names from the table above. Tags like `pr-42`
+or `sha-abc123` are expanded to the default `ghcr.io/sirosfoundation/`
+registry. Full image refs (`ghcr.io/other-org/image:tag`) are used as-is.
+
+When the comment is detected, the workflow:
+1. Reacts with 🚀 and posts a status comment
+2. Fires `repository_dispatch` on `siros-conformance` for each profile
+3. Conformance tests run with the specified images
+4. Results are posted back as a comment on the originating PR
+
+Required secrets (in the connected repo):
+- `CONFORMANCE_DISPATCH_TOKEN` — PAT with `repo` scope for `siros-conformance`
+
+Required secrets (in siros-conformance):
+- `CONFORMANCE_PR_TOKEN` — PAT with `repo` scope for the connected repo
+
 ### Cross-repo CI trigger (repository_dispatch)
 
-Other repos can trigger conformance tests from their own CI.
-See [`examples/caller-workflow.yml`](examples/caller-workflow.yml) for
-a drop-in template. The flow:
+For automated CI-triggered conformance (e.g. after image build),
+see [`examples/caller-workflow.yml`](examples/caller-workflow.yml).
+The flow:
 
 1. PR CI in repo X builds and pushes `ghcr.io/.../service:pr-N`
 2. Caller workflow fires `repository_dispatch` on `siros-conformance`
 3. Conformance tests run with the PR image
 4. Results are posted as a comment on the PR in repo X
-
-Required secrets:
-- `CONFORMANCE_DISPATCH_TOKEN` (in repo X): PAT to trigger dispatch
-- `CONFORMANCE_PR_TOKEN` (in siros-conformance): PAT to comment on PRs
 
 ## Conformance reports
 
