@@ -1,0 +1,48 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <title>Conformance Run 26345547581</title>
+  <style>
+    body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; max-width: 900px; margin: 2rem auto; padding: 0 1rem; color: #24292f; }
+    h1 { border-bottom: 1px solid #d0d7de; padding-bottom: .5rem; }
+    table { border-collapse: collapse; width: 100%; margin: 1rem 0; }
+    th, td { border: 1px solid #d0d7de; padding: .5rem .75rem; text-align: left; }
+    th { background: #f6f8fa; }
+    .pass { color: #1a7f37; } .fail { color: #cf222e; }
+    a { color: #0969da; }
+    .conditions { font-size: 0.85em; color: #57606a; }
+    details { margin: 1rem 0; }
+    summary { cursor: pointer; font-weight: 600; }
+    pre { background: #f6f8fa; padding: .75rem; border-radius: 6px; overflow-x: auto; font-size: 0.85em; }
+  </style>
+</head>
+<body>
+  <h1>Conformance Run #26345547581</h1>
+  <p><strong>Date:</strong> 2026-05-23 22:52:52 UTC</p>
+  
+  <p><a href="../">&larr; All runs</a></p>
+  <h2>❌ OID4VCI Wallet</h2>
+  <p>Variant: <code>sd_jwt_vc / pre-authorized_code / immediate / by_value</code> | Modules: 3 (0 passed, 3 failed)</p>
+  <table>
+    <tr><th>Module</th><th>Result</th><th>Conditions</th><th>Report</th></tr>
+    <tr><td><code>oid4vci-1_0-wallet-test-credential-issuance</code></td><td class="fail">❌ FAILED</td><td class="conditions">INFO:8 SUCCESS:111 FAILURE:2</td><td><a href="wallet-vci/j7HhfN1dwcy0H/">report</a></td></tr>
+    <tr><td><code>oid4vci-1_0-wallet-test-credential-issuance-notification</code></td><td class="fail">❌ FAILED</td><td class="conditions">INFO:8 SUCCESS:110 FAILURE:1 SKIPPED:1</td><td><a href="wallet-vci/j7HhfN1dwcy0H/">report</a></td></tr>
+    <tr><td><code>oid4vci-1_0-wallet-happy-path-with-scopes-without-authorization-details-in-token-response</code></td><td class="fail">❌ FAILED</td><td class="conditions">INFO:8 SUCCESS:109 FAILURE:1</td><td><a href="wallet-vci/j7HhfN1dwcy0H/">report</a></td></tr>
+  </table>
+  <details><summary>Failure details</summary>
+  <h4>oid4vci-1_0-wallet-test-credential-issuance</h4>
+  <ul>
+    <li><strong>CheckForClientAssertionJtiReuse</strong>: Detected reuse of client_assertion JWT for jti=e4a0eb40-946e-4146-83b7-27c9c635dee6</li>
+    <li><strong>VCICheckIssuerMetadataRequestUrl</strong>: Issuer metadata request does not match expected URL path</li>
+  </ul>
+  <h4>oid4vci-1_0-wallet-test-credential-issuance-notification</h4>
+  <ul>
+    <li><strong>CheckForClientAssertionJtiReuse</strong>: Detected reuse of client_assertion JWT for jti=2feaae17-9473-45b0-81ee-e05105641198</li>
+  </ul>
+  <h4>oid4vci-1_0-wallet-happy-path-with-scopes-without-authorization-details-in-token-response</h4>
+  <ul>
+    <li><strong>CheckForClientAssertionJtiReuse</strong>: Detected reuse of client_assertion JWT for jti=4290e055-4f02-474b-9e20-b84f2bacad34</li>
+  </ul>
+  </details>
+</body></html>
