@@ -50,7 +50,7 @@ jobs:
       - name: Apply image overrides
         run: |
           OVERRIDES='${{ inputs.image-overrides || toJSON(github.event.client_payload.image-overrides) }}'
-          if [ -n "$OVERRIDES" ] && [ "$OVERRIDES" != '""' ] && [ "$OVERRIDES" != 'null' ]; then
+          if [ -n "$OVERRIDES" ] && [ "$OVERRIDES" != '""' ] && [ "$OVERRIDES" != 'null' ] && [ "$OVERRIDES" != '"{}"' ] && [ "$OVERRIDES" != '{}' ]; then
             eval "$(node scripts/parse-deps.mjs --json "$OVERRIDES")"
             node scripts/parse-deps.mjs --json "$OVERRIDES" --env-file >> $GITHUB_ENV
           fi

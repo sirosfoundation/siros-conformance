@@ -60,7 +60,15 @@ const prBodyIdx = args.indexOf('--pr-body');
 const prIdx = args.indexOf('--pr');
 
 if (jsonIdx !== -1 && args[jsonIdx + 1]) {
-  const raw = args[jsonIdx + 1].trim();
+  let raw = args[jsonIdx + 1].trim();
+  // Handle double-encoded JSON from toJSON() in GitHub Actions
+  // e.g. '"{}"' → '{}', '"{\\"key\\":\\"val\\"}"' → '{"key":"val"}'
+  if (raw.startsWith('"') && raw.endsWith('"')) {
+    try {
+      const unwrapped = JSON.parse(raw);
+      if (typeof unwrapped === 'string') raw = unwrapped;
+    } catch (_) { /* not double-encoded, use as-is */ }
+  }
   if (raw && raw !== '{}' && raw !== '') {
     try {
       overrides = JSON.parse(raw);
