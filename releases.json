@@ -1,0 +1,46 @@
+{
+  "$schema": "./releases.schema.json",
+  "profiles": {
+    "wallet": {
+      "description": "Wallet conformance test stack (VCI + VP)",
+      "services": [
+        "wallet-frontend",
+        "go-wallet-backend",
+        "go-wallet-registry",
+        "go-trust"
+      ],
+      "releases": {
+        "0.0.1": {
+          "date": "2026-05-24",
+          "notes": "Initial baseline — pre-release images",
+          "images": {
+            "wallet-frontend": "ghcr.io/sirosfoundation/wallet-frontend:unstable",
+            "go-wallet-backend": "ghcr.io/sirosfoundation/go-wallet-backend:latest",
+            "go-wallet-registry": "ghcr.io/sirosfoundation/go-wallet-registry:latest",
+            "go-trust": "ghcr.io/sirosfoundation/go-trust:latest"
+          }
+        }
+      }
+    },
+    "issuer": {
+      "description": "Issuer conformance test stack",
+      "services": [
+        "vc-issuer",
+        "vc-apigw",
+        "vc-registry",
+        "vc-mockas",
+        "go-trust"
+      ],
+      "releases": {}
+    },
+    "verifier": {
+      "description": "Verifier conformance test stack",
+      "services": [
+        "vc-verifier",
+        "vc-registry",
+        "go-trust"
+      ],
+      "releases": {}
+    }
+  }
+}
