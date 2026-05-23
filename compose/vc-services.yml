@@ -81,6 +81,7 @@ services:
       - ../fixtures/vc-metadata:/metadata:ro
       - ../fixtures/vc-presentation-requests:/presentation_requests:ro
       - ../fixtures/oauth-metadata-verifier.json:/oauth-metadata.json:ro
+      - ../fixtures/verifier-static:/static:ro
     environment:
       - VC_CONFIG_YAML=/config.yaml
       - SSL_CERT_FILE=/pki/rootCA.crt
