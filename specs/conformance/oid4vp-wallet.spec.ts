@@ -340,13 +340,20 @@ test.describe('OID4VP Wallet Conformance Suite', () => {
             }
 
             const finalInfo = await api.getModuleInfo(moduleId);
+            const { counts, failures } = await api.getModuleConditions(moduleId);
             console.log(`Module ${moduleName} result: ${finalInfo.result}`);
+            console.log(`  Conditions: ${Object.entries(counts).map(([k,v]) => `${k}=${v}`).join(' ')}`);
+            if (failures.length > 0) {
+              failures.forEach(f => console.log(`  FAILURE [${f.src}]: ${f.msg}`));
+            }
 
             results.push({
               module: moduleName,
               status: finalInfo.status,
               result: finalInfo.result,
               passed: finalInfo.result === 'PASSED',
+              conditions: counts,
+              failures,
             });
 
             // Navigate back to wallet home between modules
@@ -378,6 +385,16 @@ test.describe('OID4VP Wallet Conformance Suite', () => {
             passed: passed.length,
             failed: failed.length,
             modules: results,
+            metadata: {
+              targetRepo: process.env.TARGET_REPO || '',
+              targetPr: process.env.TARGET_PR || '',
+              runId: process.env.GITHUB_RUN_ID || '',
+              images: {
+                'wallet-frontend': process.env.WALLET_FRONTEND_IMAGE || '',
+                'wallet-backend': process.env.WALLET_BACKEND_IMAGE || '',
+                'wallet-registry': process.env.WALLET_REGISTRY_IMAGE || '',
+              },
+            },
           };
           fs.mkdirSync(RESULTS_DIR, { recursive: true });
           fs.writeFileSync(

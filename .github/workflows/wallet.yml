@@ -38,13 +38,21 @@ concurrency:
   group: wallet-conformance-${{ github.ref }}
   cancel-in-progress: true
 
+permissions:
+  contents: write
+  pages: write
+
 jobs:
   wallet-conformance:
     runs-on: ubuntu-latest
     timeout-minutes: 45
+    outputs:
+      pages-url: ${{ steps.pages.outputs.PAGES_URL }}
 
     steps:
       - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
 
       - name: Add /etc/hosts entry
         run: echo "127.0.0.1 localhost.emobix.co.uk" | sudo tee -a /etc/hosts
@@ -110,8 +118,14 @@ jobs:
           BACKEND_URL: http://localhost:8080
           ADMIN_URL: http://localhost:8081
           CONFORMANCE_RESULTS_DIR: ./conformance-results
+          TARGET_REPO: ${{ inputs.target-repo || github.event.client_payload.target-repo || '' }}
+          TARGET_PR: ${{ inputs.target-pr || github.event.client_payload.target-pr || '' }}
+          WALLET_FRONTEND_IMAGE: ${{ env.WALLET_FRONTEND_IMAGE || 'ghcr.io/sirosfoundation/wallet-frontend:unstable' }}
+          WALLET_BACKEND_IMAGE: ${{ env.WALLET_BACKEND_IMAGE || 'ghcr.io/sirosfoundation/go-wallet-backend:latest' }}
+          WALLET_REGISTRY_IMAGE: ${{ env.WALLET_REGISTRY_IMAGE || 'ghcr.io/sirosfoundation/go-wallet-registry:latest' }}
 
       - name: Run wallet VP conformance tests
+        continue-on-error: true
         run: npx playwright test specs/conformance/oid4vp-wallet.spec.ts
         env:
           NODE_TLS_REJECT_UNAUTHORIZED: '0'
@@ -120,17 +134,29 @@ jobs:
           BACKEND_URL: http://localhost:8080
           ADMIN_URL: http://localhost:8081
           CONFORMANCE_RESULTS_DIR: ./conformance-results
+          TARGET_REPO: ${{ inputs.target-repo || github.event.client_payload.target-repo || '' }}
+          TARGET_PR: ${{ inputs.target-pr || github.event.client_payload.target-pr || '' }}
+          WALLET_FRONTEND_IMAGE: ${{ env.WALLET_FRONTEND_IMAGE || 'ghcr.io/sirosfoundation/wallet-frontend:unstable' }}
+          WALLET_BACKEND_IMAGE: ${{ env.WALLET_BACKEND_IMAGE || 'ghcr.io/sirosfoundation/go-wallet-backend:latest' }}
+          WALLET_REGISTRY_IMAGE: ${{ env.WALLET_REGISTRY_IMAGE || 'ghcr.io/sirosfoundation/go-wallet-registry:latest' }}
+
+      - name: Publish results to GitHub Pages
+        if: always()
+        id: pages
+        run: |
+          ls conformance-results/*-summary.json 2>/dev/null || exit 0
+          node scripts/publish-pages.mjs ./conformance-results
 
       - name: Generate job summary
         if: always()
         run: |
-          for f in conformance-results/*-summary.json; do
-            [ -f "$f" ] && break
-            exit 0
-          done
-          node scripts/generate-summary.mjs ./conformance-results \
-            --run-url "${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}" \
-            >> $GITHUB_STEP_SUMMARY
+          ls conformance-results/*-summary.json 2>/dev/null || exit 0
+          ARGS=(./conformance-results)
+          ARGS+=(--run-url "${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}")
+          if [ -n "${{ steps.pages.outputs.PAGES_URL }}" ]; then
+            ARGS+=(--pages-url "${{ steps.pages.outputs.PAGES_URL }}")
+          fi
+          node scripts/generate-summary.mjs "${ARGS[@]}" >> $GITHUB_STEP_SUMMARY
 
       - name: Upload conformance reports
         if: always()
@@ -188,5 +214,6 @@ jobs:
     with:
       target-repo: ${{ inputs.target-repo || github.event.client_payload.target-repo || '' }}
       target-pr: ${{ inputs.target-pr || github.event.client_payload.target-pr || '' }}
+      pages-url: ${{ needs.wallet-conformance.outputs.pages-url }}
     secrets:
       pr-token: ${{ secrets.CONFORMANCE_PR_TOKEN }}

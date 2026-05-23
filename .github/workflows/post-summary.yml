@@ -30,6 +30,11 @@ on:
         required: false
         default: ''
         type: string
+      pages-url:
+        description: 'URL to GitHub Pages report'
+        required: false
+        default: ''
+        type: string
     secrets:
       pr-token:
         description: 'GitHub token with repo scope for cross-repo PR comments'
@@ -56,7 +61,11 @@ jobs:
           fi
 
           # Generate summary
-          node scripts/generate-summary.mjs "${{ inputs.results-dir }}" --run-url "$RUN_URL" > /tmp/summary.md
+          ARGS=("${{ inputs.results-dir }}" --run-url "$RUN_URL")
+          if [ -n "${{ inputs.pages-url }}" ]; then
+            ARGS+=(--pages-url "${{ inputs.pages-url }}")
+          fi
+          node scripts/generate-summary.mjs "${ARGS[@]}" > /tmp/summary.md
 
           # Also write to GitHub Actions job summary
           cat /tmp/summary.md >> $GITHUB_STEP_SUMMARY

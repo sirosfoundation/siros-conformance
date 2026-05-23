@@ -6,7 +6,7 @@
  * a markdown comment suitable for posting on a GitHub PR.
  *
  * Usage:
- *   node scripts/generate-summary.mjs [results-dir] [--run-url URL]
+ *   node scripts/generate-summary.mjs [results-dir] [--run-url URL] [--pages-url URL]
  *
  * Output goes to stdout; pipe or redirect as needed.
  */
@@ -17,6 +17,8 @@ import * as path from 'path';
 const resultsDir = process.argv[2] || './conformance-results';
 const runUrlIdx = process.argv.indexOf('--run-url');
 const runUrl = runUrlIdx !== -1 ? process.argv[runUrlIdx + 1] : process.env.GITHUB_RUN_URL || '';
+const pagesUrlIdx = process.argv.indexOf('--pages-url');
+const pagesUrl = pagesUrlIdx !== -1 ? process.argv[pagesUrlIdx + 1] : '';
 
 // ── Collect summaries ──────────────────────────────────────────────────────
 
@@ -42,12 +44,21 @@ const PROFILE_LABELS = {
   'wallet-vp': 'OID4VP Wallet',
 };
 
-function statusIcon(passed) {
-  return passed ? '✅' : '❌';
-}
+const CONDITION_ORDER = ['SUCCESS', 'FAILURE', 'WARNING', 'REVIEW', 'INFO'];
 
 function overallIcon(summary) {
   return summary.failed === 0 ? '✅' : '❌';
+}
+
+function formatConditions(counts) {
+  if (!counts || Object.keys(counts).length === 0) return '—';
+  return CONDITION_ORDER
+    .filter(k => counts[k])
+    .map(k => {
+      const icon = k === 'SUCCESS' ? '🟢' : k === 'FAILURE' ? '🔴' : k === 'WARNING' ? '🟡' : '⚪';
+      return `${icon} ${k} ${counts[k]}`;
+    })
+    .join(' · ');
 }
 
 // ── Build markdown ─────────────────────────────────────────────────────────
@@ -73,63 +84,65 @@ for (const s of summaries) {
 lines.push(`| **Total** | **${totalPassed}** | **${totalFailed}** | **${totalModules}** | ${allPassed ? '✅' : '❌'} |`);
 lines.push('');
 
-// Failure details
-const failedSummaries = summaries.filter(s => s.failed > 0);
-if (failedSummaries.length > 0) {
-  lines.push('<details>');
-  lines.push('<summary>Failed modules</summary>');
+// Per-profile detail with conditions
+for (const s of summaries) {
+  const label = PROFILE_LABELS[s.profile] || s.profile;
+  lines.push(`### ${label}`);
+  lines.push('');
+  lines.push('| Module | Result | Conditions |');
+  lines.push('|--------|--------|------------|');
+  for (const m of s.modules) {
+    const icon = m.passed ? '✅' : '❌';
+    const conds = formatConditions(m.conditions);
+    lines.push(`| \`${m.module}\` | ${icon} ${m.result} | ${conds} |`);
+  }
   lines.push('');
 
-  for (const s of failedSummaries) {
-    const label = PROFILE_LABELS[s.profile] || s.profile;
-    const failedModules = s.modules.filter(m => !m.passed);
-    lines.push(`### ${label}`);
+  // Inline failure details
+  const failedModules = s.modules.filter(m => m.failures && m.failures.length > 0);
+  if (failedModules.length > 0) {
+    lines.push('<details>');
+    lines.push(`<summary>Failure details (${failedModules.reduce((n, m) => n + m.failures.length, 0)} conditions)</summary>`);
     lines.push('');
-    lines.push('| Module | Status | Result |');
-    lines.push('|--------|--------|--------|');
     for (const m of failedModules) {
-      lines.push(`| \`${m.module}\` | ${m.status} | ${m.result} |`);
+      lines.push(`**\`${m.module}\`**`);
+      for (const f of m.failures) {
+        lines.push(`- \`${f.src}\`: ${f.msg}`);
+      }
+      lines.push('');
     }
+    lines.push('</details>');
     lines.push('');
   }
-
-  lines.push('</details>');
-  lines.push('');
 }
 
-// Passed details (collapsed)
-const passedSummaries = summaries.filter(s => s.passed > 0);
-if (passedSummaries.length > 0) {
-  lines.push('<details>');
-  lines.push('<summary>Passed modules</summary>');
-  lines.push('');
-
-  for (const s of passedSummaries) {
-    const label = PROFILE_LABELS[s.profile] || s.profile;
-    const passedModules = s.modules.filter(m => m.passed);
-    if (passedModules.length === 0) continue;
-    lines.push(`### ${label}`);
+// Metadata
+const meta = summaries[0]?.metadata;
+if (meta) {
+  const imageLines = Object.entries(meta.images || {})
+    .filter(([, v]) => v)
+    .map(([k, v]) => `\`${k}\`: \`${v}\``);
+  if (imageLines.length > 0 || meta.targetRepo) {
+    lines.push('<details>');
+    lines.push('<summary>Test environment</summary>');
     lines.push('');
-    for (const m of passedModules) {
-      lines.push(`- ✅ \`${m.module}\``);
+    if (meta.targetRepo) lines.push(`- **Target:** ${meta.targetRepo}${meta.targetPr ? ` #${meta.targetPr}` : ''}`);
+    for (const il of imageLines) {
+      lines.push(`- ${il}`);
     }
     lines.push('');
+    lines.push('</details>');
+    lines.push('');
   }
-
-  lines.push('</details>');
-  lines.push('');
 }
 
 // Links
 lines.push('**Links:**');
+if (pagesUrl) {
+  lines.push(`- [📊 Full Report (GitHub Pages)](${pagesUrl})`);
+}
 if (runUrl) {
   lines.push(`- [CI Run](${runUrl})`);
-}
-for (const s of summaries) {
-  const label = PROFILE_LABELS[s.profile] || s.profile;
-  if (s.planDetailUrl) {
-    lines.push(`- [${label} — full report](${s.planDetailUrl})`);
-  }
 }
 lines.push('');
 

@@ -288,6 +288,27 @@ export class ConformanceAPI {
     });
   }
 
+  async getModuleConditions(moduleId: string): Promise<{
+    counts: Record<string, number>;
+    failures: Array<{ src: string; msg: string }>;
+  }> {
+    const logs = await this.getTestLog(moduleId);
+    const counts: Record<string, number> = {};
+    const failures: Array<{ src: string; msg: string }> = [];
+
+    for (const entry of logs) {
+      const result = entry.result;
+      if (result && result !== 'FINISHED') {
+        counts[result] = (counts[result] || 0) + 1;
+        if (result === 'FAILURE') {
+          failures.push({ src: entry.src || '', msg: entry.msg || '' });
+        }
+      }
+    }
+
+    return { counts, failures };
+  }
+
   async waitForState(
     moduleId: string,
     requiredStates: TestState[],
