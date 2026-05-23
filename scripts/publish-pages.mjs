@@ -316,6 +316,8 @@ fs.writeFileSync(path.join(pagesDir, '.nojekyll'), '');
 // ── Commit and push ────────────────────────────────────────────────────────
 
 try {
+  run('git config user.email "github-actions[bot]@users.noreply.github.com"', { cwd: pagesDir });
+  run('git config user.name "github-actions[bot]"', { cwd: pagesDir });
   run('git add -A', { cwd: pagesDir });
   const status = run('git status --porcelain', { cwd: pagesDir });
   if (status) {
@@ -336,5 +338,5 @@ console.log(`PAGES_URL=${pagesUrl}`);
 
 // Write to GITHUB_OUTPUT if available
 if (process.env.GITHUB_OUTPUT) {
-  fs.appendFileSync(process.env.GITHUB_OUTPUT, `pages-url=${pagesUrl}\n`);
+  fs.appendFileSync(process.env.GITHUB_OUTPUT, `PAGES_URL=${pagesUrl}\n`);
 }
