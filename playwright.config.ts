@@ -33,10 +33,16 @@ export default defineConfig({
       name: 'chromium',
       use: {
         ...devices['Desktop Chrome'],
+        channel: 'chrome',
         launchOptions: {
           args: [
+            '--enable-experimental-web-platform-features',
             '--disable-web-security',
             '--allow-insecure-localhost',
+            '--disable-gpu',
+            '--no-sandbox',
+            '--disable-setuid-sandbox',
+            '--disable-dev-shm-usage',
           ],
         },
       },
