@@ -123,7 +123,7 @@ for (const f of summaryFiles) {
 const SIROS_LOGO_SVG = `<svg viewBox="0 0 512 512" fill="none" xmlns="http://www.w3.org/2000/svg" width="32" height="32"><rect width="512" height="512" rx="256" fill="white"/><path fill-rule="evenodd" clip-rule="evenodd" d="M187.096 102.215C199.23 181.029 199.23 181.029 278.044 193.221C199.257 205.35 199.23 205.528 187.108 284.202C187.104 284.229 187.1 284.257 187.096 284.284C174.904 205.412 174.904 205.412 96.0903 193.221C174.904 181.029 174.904 181.029 187.096 102.215ZM193.221 329.469C331.318 308.09 331.318 308.09 352.697 169.935C373.498 304.565 374.018 308.032 501.773 327.851C508.418 305.027 512 280.933 512 256.029C512 114.58 397.42 0 255.971 0C114.58 0 0 114.58 0 256.029C0 397.42 114.58 512 255.971 512C371.245 512 468.664 435.902 500.79 331.202C373.961 350.848 373.441 354.893 352.697 488.887C331.318 350.79 331.318 350.79 193.221 329.469Z" fill="#1C4587"/></svg>`;
 
 const SIROS_CSS = `
-  :root { --siros-blue: #1C4587; --siros-light: #f0f4f8; }
+  :root { --siros-blue: #1C4587; --siros-light: #f0f4f8; --c-success: #1a7f37; --c-info: #8250df; --c-fail: #cf222e; --c-warn: #9a6700; --c-skip: #8b949e; --c-review: #0969da; }
   * { box-sizing: border-box; }
   body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; margin: 0; color: #24292f; background: #fff; }
   .site-header { background: var(--siros-blue); color: #fff; padding: .75rem 0; }
@@ -140,8 +140,7 @@ const SIROS_CSS = `
   th, td { border: 1px solid #d0d7de; padding: .5rem .75rem; text-align: left; }
   th { background: var(--siros-light); color: var(--siros-blue); font-weight: 600; }
   a { color: var(--siros-blue); }
-  .pass { color: #1a7f37; } .fail { color: #cf222e; } .warn { color: #9a6700; }
-  .conditions { font-size: 0.85em; color: #57606a; }
+  .pass { color: var(--c-success); } .fail { color: var(--c-fail); } .warn { color: var(--c-warn); }
   details { margin: 1rem 0; }
   summary { cursor: pointer; font-weight: 600; color: var(--siros-blue); }
   code { background: var(--siros-light); padding: .15em .35em; border-radius: 3px; font-size: .9em; }
@@ -153,6 +152,18 @@ const SIROS_CSS = `
   .breadcrumb a { color: var(--siros-blue); }
   footer { margin-top: 3rem; padding-top: 1.5rem; border-top: 1px solid #d0d7de; text-align: center; font-size: .85rem; color: #57606a; }
   footer a { color: var(--siros-blue); }
+  .cbar { display: flex; height: 18px; border-radius: 4px; overflow: hidden; min-width: 120px; border: 1px solid #d0d7de; }
+  .cbar span { display: block; height: 100%; }
+  .cbar-success { background: var(--c-success); }
+  .cbar-info { background: var(--c-info); }
+  .cbar-fail { background: var(--c-fail); }
+  .cbar-warn { background: var(--c-warn); }
+  .cbar-skip { background: var(--c-skip); }
+  .cbar-review { background: var(--c-review); }
+  .cbar-legend { display: flex; flex-wrap: wrap; gap: .5rem; font-size: .8rem; margin-top: .25rem; }
+  .cbar-legend span { display: flex; align-items: center; gap: .2rem; }
+  .cbar-legend .dot { width: 10px; height: 10px; border-radius: 2px; display: inline-block; }
+  .cbar-wrap { min-width: 180px; }
 `;
 
 function htmlHeader(title, extra = '') {
@@ -197,6 +208,49 @@ function htmlFooter() {
 
 const PROFILE_LABELS = { 'wallet-vci': 'OID4VCI Wallet', 'wallet-vp': 'OID4VP Wallet', 'issuer': 'OID4VCI Issuer', 'verifier': 'OID4VP Verifier' };
 
+// Condition categories in display order (left→right in the bar)
+const COND_CATS = [
+  { key: 'SUCCESS',  cls: 'cbar-success', color: '#1a7f37', label: 'Success' },
+  { key: 'INFO',     cls: 'cbar-info',    color: '#8250df', label: 'Info' },
+  { key: 'WARNING',  cls: 'cbar-warn',    color: '#9a6700', label: 'Warning' },
+  { key: 'REVIEW',   cls: 'cbar-review',  color: '#0969da', label: 'Review' },
+  { key: 'FAILURE',  cls: 'cbar-fail',    color: '#cf222e', label: 'Failure' },
+  { key: 'SKIPPED',  cls: 'cbar-skip',    color: '#8b949e', label: 'Skipped' },
+];
+
+function conditionBar(counts, opts = {}) {
+  if (!counts || Object.keys(counts).length === 0) return '<span style="color:#8b949e">—</span>';
+  const total = COND_CATS.reduce((n, c) => n + (counts[c.key] || 0), 0);
+  if (total === 0) return '<span style="color:#8b949e">—</span>';
+
+  const segments = COND_CATS
+    .filter(c => counts[c.key])
+    .map(c => {
+      const pct = ((counts[c.key] / total) * 100).toFixed(1);
+      return `<span class="${c.cls}" style="width:${pct}%" title="${c.label}: ${counts[c.key]}"></span>`;
+    })
+    .join('');
+
+  const legend = COND_CATS
+    .filter(c => counts[c.key])
+    .map(c => `<span><span class="dot" style="background:${c.color}"></span>${counts[c.key]}</span>`)
+    .join('');
+
+  return `<div class="cbar-wrap"><div class="cbar">${segments}</div><div class="cbar-legend">${legend}</div></div>`;
+}
+
+function aggregateConditions(modules) {
+  const totals = {};
+  for (const m of modules) {
+    if (!m.conditions) continue;
+    for (const [k, v] of Object.entries(m.conditions)) {
+      if (k === 'FINISHED') continue;
+      totals[k] = (totals[k] || 0) + v;
+    }
+  }
+  return totals;
+}
+
 function generateRunIndex(runId, summaries, runUrl) {
   const timestamp = summaries[0]?.timestamp || new Date().toISOString();
   const date = new Date(timestamp).toISOString().replace('T', ' ').replace(/\.\d+Z/, ' UTC');
@@ -210,13 +264,22 @@ function generateRunIndex(runId, summaries, runUrl) {
   html += `    <div class="breadcrumb"><a href="../">← All Runs</a></div>\n`;
   html += `    <h1>Conformance Run #${runId}</h1>\n`;
 
-  // Stats cards
+  // Aggregate conditions across all modules
+  const allModules = summaries.flatMap(s => s.modules);
+  const aggConds = aggregateConditions(allModules);
+
+  // Stats cards with condition totals
   html += `    <div class="stats-grid">\n`;
   html += `      <div class="stat-card"><div class="number">${date.split(' ')[0]}</div><div class="label">Date</div></div>\n`;
   html += `      <div class="stat-card"><div class="number">${totalModules}</div><div class="label">Modules</div></div>\n`;
-  html += `      <div class="stat-card"><div class="number" style="color:#1a7f37">${totalPassed}</div><div class="label">Passed</div></div>\n`;
-  html += `      <div class="stat-card"><div class="number" style="color:${totalFailed > 0 ? '#cf222e' : '#1a7f37'}">${totalFailed}</div><div class="label">Failed</div></div>\n`;
+  for (const c of COND_CATS) {
+    if (!aggConds[c.key]) continue;
+    html += `      <div class="stat-card"><div class="number" style="color:${c.color}">${aggConds[c.key]}</div><div class="label">${c.label}</div></div>\n`;
+  }
   html += `    </div>\n`;
+
+  // Overall condition bar
+  html += `    <div style="margin:1rem 0">${conditionBar(aggConds)}</div>\n`;
 
   if (runUrl) {
     html += `    <p><strong>CI Run:</strong> <a href="${escapeHtml(runUrl)}">${escapeHtml(runUrl)}</a></p>\n`;
@@ -232,24 +295,16 @@ function generateRunIndex(runId, summaries, runUrl) {
 
   for (const s of summaries) {
     const label = PROFILE_LABELS[s.profile] || s.profile;
-    const icon = s.failed === 0 ? '✅' : '❌';
+    const profileConds = aggregateConditions(s.modules);
 
-    html += `    <h2>${icon} ${label}</h2>\n`;
-    html += `    <p>Variant: <code>${escapeHtml(s.variant || 'default')}</code> · ${s.total} modules (${s.passed} passed, ${s.failed} failed)</p>\n`;
-    html += `    <table>\n      <tr><th>Module</th><th>Result</th><th>Conditions</th><th>Report</th></tr>\n`;
+    html += `    <h2>${label}</h2>\n`;
+    html += `    <p>Variant: <code>${escapeHtml(s.variant || 'default')}</code> · ${s.total} modules</p>\n`;
+    html += `    <div style="margin:.5rem 0">${conditionBar(profileConds)}</div>\n`;
+    html += `    <table>\n      <tr><th>Module</th><th>Conditions</th><th>Report</th></tr>\n`;
 
     for (const m of s.modules) {
-      const cls = m.passed ? 'pass' : 'fail';
-      const mIcon = m.passed ? '✅' : '❌';
-      const conds = m.conditions || {};
-      const condParts = [];
-      for (const [k, v] of Object.entries(conds)) {
-        if (k === 'FINISHED') continue;
-        const cls2 = k === 'SUCCESS' ? 'pass' : k === 'FAILURE' ? 'fail' : k === 'WARNING' ? 'warn' : '';
-        condParts.push(`<span class="${cls2}">${k}:${v}</span>`);
-      }
       const reportLink = `${s.profile}/${s.planId}/`;
-      html += `      <tr><td><code>${escapeHtml(m.module)}</code></td><td class="${cls}">${mIcon} ${m.result}</td><td class="conditions">${condParts.join(' · ')}</td><td><a href="${reportLink}">report</a></td></tr>\n`;
+      html += `      <tr><td><code>${escapeHtml(m.module)}</code></td><td>${conditionBar(m.conditions || {})}</td><td><a href="${reportLink}">report</a></td></tr>\n`;
     }
     html += `    </table>\n`;
 
@@ -294,8 +349,10 @@ function generateTopIndex(pagesDir, pagesBase) {
     let totalFailed = 0;
     let totalModules = 0;
     const profiles = [];
+    const summaryData = [];
     let targetRepo = '';
     let targetPr = '';
+    const condTotals = {};
 
     for (const sf of summaryFiles) {
       try {
@@ -307,10 +364,18 @@ function generateTopIndex(pagesDir, pagesBase) {
         profiles.push(s.profile);
         if (s.metadata?.targetRepo) targetRepo = s.metadata.targetRepo;
         if (s.metadata?.targetPr) targetPr = s.metadata.targetPr;
+        // Aggregate conditions
+        for (const m of (s.modules || [])) {
+          if (!m.conditions) continue;
+          for (const [k, v] of Object.entries(m.conditions)) {
+            if (k === 'FINISHED') continue;
+            condTotals[k] = (condTotals[k] || 0) + v;
+          }
+        }
       } catch {}
     }
 
-    runs.push({ id: entry, timestamp: timestamp || fs.statSync(entryPath).mtime.toISOString(), totalPassed, totalFailed, totalModules, profiles, targetRepo, targetPr });
+    runs.push({ id: entry, timestamp: timestamp || fs.statSync(entryPath).mtime.toISOString(), totalPassed, totalFailed, totalModules, profiles, targetRepo, targetPr, condTotals });
   }
 
   runs.sort((a, b) => b.timestamp.localeCompare(a.timestamp));
@@ -321,27 +386,29 @@ function generateTopIndex(pagesDir, pagesBase) {
 
   // Stats
   if (runs.length > 0) {
-    const latestPassed = runs[0].totalFailed === 0;
     html += `    <div class="stats-grid">\n`;
     html += `      <div class="stat-card"><div class="number">${runs.length}</div><div class="label">Total Runs</div></div>\n`;
-    html += `      <div class="stat-card"><div class="number" style="color:${latestPassed ? '#1a7f37' : '#cf222e'}">${latestPassed ? '✅' : '❌'}</div><div class="label">Latest</div></div>\n`;
     html += `      <div class="stat-card"><div class="number">${runs[0].totalModules}</div><div class="label">Modules (latest)</div></div>\n`;
+    for (const c of COND_CATS) {
+      if (!runs[0].condTotals[c.key]) continue;
+      html += `      <div class="stat-card"><div class="number" style="color:${c.color}">${runs[0].condTotals[c.key]}</div><div class="label">${c.label} (latest)</div></div>\n`;
+    }
     html += `    </div>\n`;
+    html += `    <div style="margin:0 0 1.5rem">${conditionBar(runs[0].condTotals)}</div>\n`;
   }
 
   html += `    <table>\n`;
-  html += `      <tr><th>Run</th><th>Date</th><th>Target</th><th>Profiles</th><th>Passed</th><th>Failed</th><th>Total</th><th>Result</th></tr>\n`;
+  html += `      <tr><th>Run</th><th>Date</th><th>Target</th><th>Profiles</th><th>Conditions</th></tr>\n`;
 
   for (const r of runs) {
     const date = new Date(r.timestamp).toISOString().replace('T', ' ').replace(/\.\d+Z/, ' UTC');
-    const icon = r.totalFailed === 0 ? '✅' : '❌';
     const profileLabels = r.profiles.map(p => ({ 'wallet-vci': 'VCI', 'wallet-vp': 'VP', 'issuer': 'Issuer', 'verifier': 'Verifier' }[p] || p)).join(', ');
     let target = '';
     if (r.targetRepo) {
       const short = r.targetRepo.split('/').pop();
       target = r.targetPr ? `<a href="https://github.com/${escapeHtml(r.targetRepo)}/pull/${escapeHtml(r.targetPr)}">${escapeHtml(short)}#${escapeHtml(r.targetPr)}</a>` : escapeHtml(short);
     }
-    html += `      <tr><td><a href="runs/${r.id}/">#${r.id}</a></td><td>${date}</td><td>${target}</td><td>${profileLabels}</td><td>${r.totalPassed}</td><td>${r.totalFailed}</td><td>${r.totalModules}</td><td>${icon}</td></tr>\n`;
+    html += `      <tr><td><a href="runs/${r.id}/">#${r.id}</a></td><td>${date}</td><td>${target}</td><td>${profileLabels}</td><td>${conditionBar(r.condTotals)}</td></tr>\n`;
   }
 
   html += `    </table>\n`;

@@ -302,7 +302,7 @@ test.describe('OID4VCI Wallet Conformance Suite', () => {
             const finalInfo = await api.getModuleInfo(moduleId);
             const { counts, failures } = await api.getModuleConditions(moduleId);
             console.log(`Module ${moduleName} result: ${finalInfo.result}`);
-            console.log('  Conditions: ' + Object.entries(counts).map(([k,v]) => k + '=' + v).join(' '));
+            console.log(`  Conditions: ${Object.entries(counts).map(([k,v]) => `${k}=${v}`).join(' ')}`);
             if (failures.length > 0) {
               failures.forEach(f => console.log(`  FAILURE [${f.src}]: ${f.msg}`));
             }

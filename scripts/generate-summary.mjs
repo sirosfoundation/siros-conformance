@@ -44,21 +44,51 @@ const PROFILE_LABELS = {
   'wallet-vp': 'OID4VP Wallet',
 };
 
-const CONDITION_ORDER = ['SUCCESS', 'FAILURE', 'WARNING', 'REVIEW', 'INFO'];
+// Condition categories in display order (left→right in the bar)
+const COND_CATS = [
+  { key: 'SUCCESS',  color: '#1a7f37', label: 'Success' },
+  { key: 'INFO',     color: '#8250df', label: 'Info' },
+  { key: 'WARNING',  color: '#9a6700', label: 'Warning' },
+  { key: 'REVIEW',   color: '#0969da', label: 'Review' },
+  { key: 'FAILURE',  color: '#cf222e', label: 'Failure' },
+  { key: 'SKIPPED',  color: '#8b949e', label: 'Skipped' },
+];
 
-function overallIcon(summary) {
-  return summary.failed === 0 ? '✅' : '❌';
+function conditionBarMd(counts) {
+  if (!counts || Object.keys(counts).length === 0) return '—';
+  const total = COND_CATS.reduce((n, c) => n + (counts[c.key] || 0), 0);
+  if (total === 0) return '—';
+
+  // Build an inline HTML progress bar using spans with background colors
+  const segments = COND_CATS
+    .filter(c => counts[c.key])
+    .map(c => {
+      const pct = ((counts[c.key] / total) * 100).toFixed(1);
+      return '<span style="display:inline-block;height:14px;width:' + pct + '%;background:' + c.color + '" title="' + c.label + ': ' + counts[c.key] + '"></span>';
+    })
+    .join('');
+
+  const bar = '<span style="display:inline-flex;height:14px;width:120px;border-radius:3px;overflow:hidden;border:1px solid #d0d7de;vertical-align:middle">' + segments + '</span>';
+
+  // Legend with counts
+  const legend = COND_CATS
+    .filter(c => counts[c.key])
+    .map(c => '<span style="color:' + c.color + '">' + counts[c.key] + '</span>')
+    .join('/');
+
+  return bar + ' ' + legend;
 }
 
-function formatConditions(counts) {
-  if (!counts || Object.keys(counts).length === 0) return '—';
-  return CONDITION_ORDER
-    .filter(k => counts[k])
-    .map(k => {
-      const icon = k === 'SUCCESS' ? '🟢' : k === 'FAILURE' ? '🔴' : k === 'WARNING' ? '🟡' : '⚪';
-      return `${icon} ${k} ${counts[k]}`;
-    })
-    .join(' · ');
+function aggregateConditions(modules) {
+  const totals = {};
+  for (const m of modules) {
+    if (!m.conditions) continue;
+    for (const [k, v] of Object.entries(m.conditions)) {
+      if (k === 'FINISHED') continue;
+      totals[k] = (totals[k] || 0) + v;
+    }
+  }
+  return totals;
 }
 
 // ── Build markdown ─────────────────────────────────────────────────────────
@@ -66,22 +96,24 @@ function formatConditions(counts) {
 const lines = [];
 
 // Header
-const totalPassed = summaries.reduce((s, r) => s + r.passed, 0);
-const totalFailed = summaries.reduce((s, r) => s + r.failed, 0);
-const totalModules = summaries.reduce((s, r) => s + r.total, 0);
+const allModules = summaries.flatMap(s => s.modules);
+const aggConds = aggregateConditions(allModules);
+const totalFailed = aggConds.FAILURE || 0;
 const allPassed = totalFailed === 0;
 
 lines.push(`## ${allPassed ? '✅' : '❌'} Conformance Results`);
 lines.push('');
+lines.push(conditionBarMd(aggConds));
+lines.push('');
 
 // Overview table
-lines.push('| Profile | Passed | Failed | Total | Result |');
-lines.push('|---------|-------:|-------:|------:|--------|');
+lines.push('| Profile | Conditions |');
+lines.push('|---------|------------|');
 for (const s of summaries) {
   const label = PROFILE_LABELS[s.profile] || s.profile;
-  lines.push(`| ${label} | ${s.passed} | ${s.failed} | ${s.total} | ${overallIcon(s)} |`);
+  const profileConds = aggregateConditions(s.modules);
+  lines.push(`| ${label} | ${conditionBarMd(profileConds)} |`);
 }
-lines.push(`| **Total** | **${totalPassed}** | **${totalFailed}** | **${totalModules}** | ${allPassed ? '✅' : '❌'} |`);
 lines.push('');
 
 // Per-profile detail with conditions
@@ -89,12 +121,10 @@ for (const s of summaries) {
   const label = PROFILE_LABELS[s.profile] || s.profile;
   lines.push(`### ${label}`);
   lines.push('');
-  lines.push('| Module | Result | Conditions |');
-  lines.push('|--------|--------|------------|');
+  lines.push('| Module | Conditions |');
+  lines.push('|--------|------------|');
   for (const m of s.modules) {
-    const icon = m.passed ? '✅' : '❌';
-    const conds = formatConditions(m.conditions);
-    lines.push(`| \`${m.module}\` | ${icon} ${m.result} | ${conds} |`);
+    lines.push(`| \`${m.module}\` | ${conditionBarMd(m.conditions)} |`);
   }
   lines.push('');
 
