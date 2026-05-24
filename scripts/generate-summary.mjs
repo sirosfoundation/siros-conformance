@@ -157,6 +157,11 @@ if (meta) {
     lines.push('<summary>Test environment</summary>');
     lines.push('');
     if (meta.targetRepo) lines.push(`- **Target:** ${meta.targetRepo}${meta.targetPr ? ` #${meta.targetPr}` : ''}`);
+    if (meta.actor) lines.push(`- **Triggered by:** [@${meta.actor}](https://github.com/${meta.actor})`);
+    if (meta.sha) {
+      const repo = meta.targetRepo || 'sirosfoundation/siros-conformance';
+      lines.push(`- **Commit:** [\`${meta.sha.slice(0, 7)}\`](https://github.com/${repo}/commit/${meta.sha})${meta.ref ? ` (${meta.ref.replace('refs/heads/', '')})` : ''}`);
+    }
     for (const il of imageLines) {
       lines.push(`- ${il}`);
     }

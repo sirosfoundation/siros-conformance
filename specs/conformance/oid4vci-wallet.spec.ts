@@ -94,7 +94,10 @@ test.describe('OID4VCI Wallet Conformance Suite', () => {
         test.beforeAll(async () => {
           if (!conformanceReady) return;
 
-          const configJson = fs.readFileSync(VCI_CONFIG_PATH, 'utf-8');
+          const config = JSON.parse(fs.readFileSync(VCI_CONFIG_PATH, 'utf-8'));
+          if (process.env.GITHUB_ACTOR) config.developer = process.env.GITHUB_ACTOR;
+          if (process.env.GITHUB_SHA) config.description = `${config.description || ''} [${process.env.GITHUB_SHA.slice(0, 7)}]`.trim();
+          const configJson = JSON.stringify(config);
 
           const plan = await api.createTestPlan(
             VCI_PLAN_NAME,
@@ -348,6 +351,9 @@ test.describe('OID4VCI Wallet Conformance Suite', () => {
               targetRepo: process.env.TARGET_REPO || '',
               targetPr: process.env.TARGET_PR || '',
               runId: process.env.GITHUB_RUN_ID || '',
+              actor: process.env.GITHUB_ACTOR || '',
+              sha: process.env.GITHUB_SHA || '',
+              ref: process.env.GITHUB_REF || '',
               images: {
                 'wallet-frontend': process.env.WALLET_FRONTEND_IMAGE || '',
                 'wallet-backend': process.env.WALLET_BACKEND_IMAGE || '',

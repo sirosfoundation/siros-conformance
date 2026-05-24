@@ -137,7 +137,14 @@ const GITHUB_SVG = `<svg viewBox="0 0 24 24" width="20" height="20" fill="curren
 // Post-process conformance suite report HTML to inject SIROS navbar + back-link
 function brandReportHtml(htmlFile, backUrl, runId) {
   let html = fs.readFileSync(htmlFile, 'utf-8');
-  if (html.includes('class="siros-report-nav"')) return; // already branded
+  if (html.includes('class="siros-report-footer"')) return; // fully branded
+
+  // Strip old nav-only branding if present (pre-footer version)
+  if (html.includes('class="siros-report-nav"')) {
+    html = html.replace(/<style>[\s\S]*?\.siros-report-nav[\s\S]*?<\/style>\n/g, '');
+    html = html.replace(/<style>body \{ padding-top: 0 !important; \}<\/style>\n/g, '');
+    html = html.replace(/<nav class="siros-report-nav">[\s\S]*?<\/nav>\n?/, '');
+  }
 
   const injectedCss = `
     .siros-report-nav { background: #fff; border-bottom: 1px solid #e0e0e0; position: sticky; top: 0; z-index: 100; font-family: 'Helvetica Neue', Arial, system-ui, sans-serif; }
@@ -411,6 +418,16 @@ function generateRunIndex(runId, summaries, runUrl) {
   if (meta?.targetRepo) {
     html += `    <p><strong>Target:</strong> ${escapeHtml(meta.targetRepo)}`;
     if (meta.targetPr) html += ` <a href="https://github.com/${escapeHtml(meta.targetRepo)}/pull/${escapeHtml(meta.targetPr)}">#${escapeHtml(meta.targetPr)}</a>`;
+    html += `</p>\n`;
+  }
+  if (meta?.actor) {
+    html += `    <p><strong>Triggered by:</strong> <a href="https://github.com/${escapeHtml(meta.actor)}">${escapeHtml(meta.actor)}</a></p>\n`;
+  }
+  if (meta?.sha) {
+    const shortSha = meta.sha.slice(0, 7);
+    const repo = meta.targetRepo || 'sirosfoundation/siros-conformance';
+    html += `    <p><strong>Commit:</strong> <a href="https://github.com/${escapeHtml(repo)}/commit/${escapeHtml(meta.sha)}"><code>${escapeHtml(shortSha)}</code></a>`;
+    if (meta.ref) html += ` (${escapeHtml(meta.ref.replace('refs/heads/', ''))})`;
     html += `</p>\n`;
   }
 
