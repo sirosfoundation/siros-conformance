@@ -1,0 +1,27 @@
+# Golden Release Combinations
+#
+# Each release defines a pinned set of container image tags that form a
+# known-good baseline for conformance testing.  When a conformance run is
+# triggered (manually, on schedule, or via repository_dispatch), images
+# default to the tags defined in the *default* release unless overridden.
+#
+# The `default` key at the top level selects which release is active.
+# Override individual images via the `image-overrides` workflow input or
+# the `conformance-deps` block in a PR description.
+
+default: beta_r2
+
+releases:
+  beta_r2:
+    description: "R2 (BETA) milestone baseline"
+    date: "2026-05-24"
+    images:
+      wallet-frontend:   v0.5.0-1-sirosid.5
+      wallet-backend:    v0.5.2
+      wallet-registry:   v0.5.2
+      go-trust:          v0.5.0
+      vc-issuer:         v0.5.5-sirosid.0
+      vc-verifier:       v0.5.5-sirosid.0
+      vc-apigw:          v0.5.5-sirosid.0
+      vc-registry:       v0.5.5-sirosid.0
+      vc-mockas:          v0.5.5-sirosid.0

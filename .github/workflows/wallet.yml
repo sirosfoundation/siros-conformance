@@ -57,6 +57,17 @@ jobs:
       - name: Add /etc/hosts entry
         run: echo "127.0.0.1 localhost.emobix.co.uk" | sudo tee -a /etc/hosts
 
+      - name: Load golden release baseline
+        run: |
+          RELEASE='${{ inputs.golden-release || github.event.client_payload.golden-release || '' }}'
+          if [ -n "$RELEASE" ]; then
+            eval "$(node scripts/resolve-golden-release.mjs --release "$RELEASE")"
+            node scripts/resolve-golden-release.mjs --release "$RELEASE" --env-file >> $GITHUB_ENV
+          else
+            eval "$(node scripts/resolve-golden-release.mjs)"
+            node scripts/resolve-golden-release.mjs --env-file >> $GITHUB_ENV
+          fi
+
       - name: Apply image overrides
         run: |
           OVERRIDES='${{ inputs.image-overrides || toJSON(github.event.client_payload.image-overrides) }}'
