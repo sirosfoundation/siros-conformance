@@ -134,6 +134,13 @@ jobs:
           WALLET_FRONTEND_IMAGE: ${{ env.WALLET_FRONTEND_IMAGE || 'ghcr.io/sirosfoundation/wallet-frontend:unstable' }}
           WALLET_BACKEND_IMAGE: ${{ env.WALLET_BACKEND_IMAGE || 'ghcr.io/sirosfoundation/go-wallet-backend:latest' }}
           WALLET_REGISTRY_IMAGE: ${{ env.WALLET_REGISTRY_IMAGE || 'ghcr.io/sirosfoundation/go-wallet-registry:latest' }}
+          GO_TRUST_IMAGE: ${{ env.GO_TRUST_IMAGE || '' }}
+          VC_ISSUER_IMAGE: ${{ env.VC_ISSUER_IMAGE || '' }}
+          VC_VERIFIER_IMAGE: ${{ env.VC_VERIFIER_IMAGE || '' }}
+          VC_APIGW_IMAGE: ${{ env.VC_APIGW_IMAGE || '' }}
+          VC_REGISTRY_IMAGE: ${{ env.VC_REGISTRY_IMAGE || '' }}
+          VC_MOCKAS_IMAGE: ${{ env.VC_MOCKAS_IMAGE || '' }}
+          GOLDEN_RELEASE: ${{ inputs.golden-release || github.event.client_payload.golden-release || '' }}
 
       - name: Run wallet VP conformance tests
         continue-on-error: true
@@ -150,6 +157,13 @@ jobs:
           WALLET_FRONTEND_IMAGE: ${{ env.WALLET_FRONTEND_IMAGE || 'ghcr.io/sirosfoundation/wallet-frontend:unstable' }}
           WALLET_BACKEND_IMAGE: ${{ env.WALLET_BACKEND_IMAGE || 'ghcr.io/sirosfoundation/go-wallet-backend:latest' }}
           WALLET_REGISTRY_IMAGE: ${{ env.WALLET_REGISTRY_IMAGE || 'ghcr.io/sirosfoundation/go-wallet-registry:latest' }}
+          GO_TRUST_IMAGE: ${{ env.GO_TRUST_IMAGE || '' }}
+          VC_ISSUER_IMAGE: ${{ env.VC_ISSUER_IMAGE || '' }}
+          VC_VERIFIER_IMAGE: ${{ env.VC_VERIFIER_IMAGE || '' }}
+          VC_APIGW_IMAGE: ${{ env.VC_APIGW_IMAGE || '' }}
+          VC_REGISTRY_IMAGE: ${{ env.VC_REGISTRY_IMAGE || '' }}
+          VC_MOCKAS_IMAGE: ${{ env.VC_MOCKAS_IMAGE || '' }}
+          GOLDEN_RELEASE: ${{ inputs.golden-release || github.event.client_payload.golden-release || '' }}
 
       - name: Publish results to GitHub Pages
         if: always()

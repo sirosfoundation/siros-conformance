@@ -443,7 +443,14 @@ test.describe('OID4VP Wallet Conformance Suite', () => {
                 'wallet-frontend': process.env.WALLET_FRONTEND_IMAGE || '',
                 'wallet-backend': process.env.WALLET_BACKEND_IMAGE || '',
                 'wallet-registry': process.env.WALLET_REGISTRY_IMAGE || '',
+                'go-trust': process.env.GO_TRUST_IMAGE || '',
+                'vc-issuer': process.env.VC_ISSUER_IMAGE || '',
+                'vc-verifier': process.env.VC_VERIFIER_IMAGE || '',
+                'vc-apigw': process.env.VC_APIGW_IMAGE || '',
+                'vc-registry': process.env.VC_REGISTRY_IMAGE || '',
+                'vc-mockas': process.env.VC_MOCKAS_IMAGE || '',
               },
+              goldenRelease: process.env.GOLDEN_RELEASE || '',
             },
           };
           fs.mkdirSync(RESULTS_DIR, { recursive: true });
