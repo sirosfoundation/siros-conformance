@@ -205,3 +205,12 @@ npx playwright test specs/conformance/oid4vci-wallet.spec.ts --grep "mdoc" --tra
 | `ADMIN_TOKEN` | `e2e-test-admin-token-for-testing-purposes-only` | Admin API token |
 | `NODE_TLS_REJECT_UNAUTHORIZED` | (must be `0`) | Required for self-signed conformance suite cert |
 | `GITHUB_ACTOR`, `GITHUB_SHA` | (CI only) | Injected into config for traceability |
+
+## Golden Releases
+
+`golden-releases.yaml` defines pinned image tag combinations ("golden releases") that form known-good baselines. The `default` key selects the active release. All CI workflows load the golden release first, then apply any `image-overrides` on top.
+
+- `scripts/resolve-golden-release.mjs` reads the YAML and outputs env vars
+- Overrides from `image-overrides` or PR `conformance-deps` blocks take precedence
+- When a PR triggers conformance via `repository_dispatch`, its build tag automatically overrides the golden release for the repo being tested
+- To add a new golden release, add a new entry under `releases:` in the YAML file
