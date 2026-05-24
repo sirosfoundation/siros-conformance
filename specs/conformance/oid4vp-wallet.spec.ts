@@ -74,10 +74,21 @@ const VP_VARIANTS = [
       vp_profile: 'plain_vp',
     },
   },
+  {
+    name: 'iso_mdl / x509_san_dns / direct_post / request_uri_signed / plain_vp',
+    configPath: '../../configs/conformance/vp-wallet-mdoc-config.json',
+    variant: {
+      credential_format: 'iso_mdl',
+      client_id_prefix: 'x509_san_dns',
+      response_mode: 'direct_post',
+      request_method: 'request_uri_signed',
+      vp_profile: 'plain_vp',
+    },
+  },
 ];
 
 const VP_PLAN_NAME = 'oid4vp-1final-wallet-test-plan';
-const VP_CONFIG_PATH = path.resolve(__dirname, '../../configs/conformance/vp-wallet-config.json');
+const VP_DEFAULT_CONFIG_PATH = path.resolve(__dirname, '../../configs/conformance/vp-wallet-config.json');
 const RESULTS_DIR = process.env.CONFORMANCE_RESULTS_DIR || path.resolve(__dirname, '../../conformance-results');
 
 // =============================================================================
@@ -182,7 +193,10 @@ test.describe('OID4VP Wallet Conformance Suite', () => {
         test.beforeAll(async () => {
           if (!conformanceReady) return;
 
-          const config = JSON.parse(fs.readFileSync(VP_CONFIG_PATH, 'utf-8'));
+          const configPath = variantConfig.configPath
+            ? path.resolve(__dirname, variantConfig.configPath)
+            : VP_DEFAULT_CONFIG_PATH;
+          const config = JSON.parse(fs.readFileSync(configPath, 'utf-8'));
           if (process.env.GITHUB_ACTOR) config.developer = process.env.GITHUB_ACTOR;
           if (process.env.GITHUB_SHA) config.description = `${config.description || ''} [${process.env.GITHUB_SHA.slice(0, 7)}]`.trim();
           const configJson = JSON.stringify(config);

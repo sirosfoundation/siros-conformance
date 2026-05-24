@@ -95,10 +95,27 @@ const VCI_VARIANTS = [
       vci_authorization_code_flow_variant: 'issuer_initiated',
     },
   },
+  {
+    name: 'mdoc / pre-authorized_code / immediate / by_value',
+    configPath: '../../configs/conformance/vci-wallet-mdoc-config.json',
+    variant: {
+      credential_format: 'mdoc',
+      vci_grant_type: 'pre_authorization_code',
+      vci_credential_issuance_mode: 'immediate',
+      vci_credential_offer_variant: 'by_value',
+      sender_constrain: 'dpop',
+      vci_credential_encryption: 'plain',
+      fapi_profile: 'vci',
+      fapi_request_method: 'unsigned',
+      client_auth_type: 'private_key_jwt',
+      authorization_request_type: 'simple',
+      vci_authorization_code_flow_variant: 'issuer_initiated',
+    },
+  },
 ];
 
 const VCI_PLAN_NAME = 'oid4vci-1_0-wallet-test-plan';
-const VCI_CONFIG_PATH = path.resolve(__dirname, '../../configs/conformance/vci-wallet-config.json');
+const VCI_DEFAULT_CONFIG_PATH = path.resolve(__dirname, '../../configs/conformance/vci-wallet-config.json');
 const RESULTS_DIR = process.env.CONFORMANCE_RESULTS_DIR || path.resolve(__dirname, '../../conformance-results');
 
 // =============================================================================
@@ -142,7 +159,10 @@ test.describe('OID4VCI Wallet Conformance Suite', () => {
         test.beforeAll(async () => {
           if (!conformanceReady) return;
 
-          const config = JSON.parse(fs.readFileSync(VCI_CONFIG_PATH, 'utf-8'));
+          const configPath = variantConfig.configPath
+            ? path.resolve(__dirname, variantConfig.configPath)
+            : VCI_DEFAULT_CONFIG_PATH;
+          const config = JSON.parse(fs.readFileSync(configPath, 'utf-8'));
           if (process.env.GITHUB_ACTOR) config.developer = process.env.GITHUB_ACTOR;
           if (process.env.GITHUB_SHA) config.description = `${config.description || ''} [${process.env.GITHUB_SHA.slice(0, 7)}]`.trim();
           const configJson = JSON.stringify(config);
@@ -171,7 +191,10 @@ test.describe('OID4VCI Wallet Conformance Suite', () => {
           expect(planModules.length).toBeGreaterThan(0);
 
           // Register conformance suite issuer for this tenant
-          const configJson = JSON.parse(fs.readFileSync(VCI_CONFIG_PATH, 'utf-8'));
+          const variantConfigPath = variantConfig.configPath
+            ? path.resolve(__dirname, variantConfig.configPath)
+            : VCI_DEFAULT_CONFIG_PATH;
+          const configJson = JSON.parse(fs.readFileSync(variantConfigPath, 'utf-8'));
           const conformanceClientId = configJson.client?.client_id || 'siros-wallet-test';
           const conformanceIssuerUrl = CONFORMANCE_URL.replace(/\/$/, '') + '/test/a/' + (configJson.alias || 'siros-wallet-vci-test') + '/';
 
