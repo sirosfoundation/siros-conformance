@@ -134,19 +134,37 @@ if (fs.existsSync(logoSrc)) {
 
 const GITHUB_SVG = `<svg viewBox="0 0 24 24" width="20" height="20" fill="currentColor" aria-hidden="true"><path fill-rule="evenodd" clip-rule="evenodd" d="M12 .5C5.73.5.66 5.57.66 11.84c0 5.02 3.25 9.27 7.76 10.77.57.1.78-.25.78-.55 0-.27-.01-1-.02-1.96-3.16.69-3.83-1.52-3.83-1.52-.52-1.32-1.27-1.67-1.27-1.67-1.04-.71.08-.69.08-.69 1.15.08 1.76 1.18 1.76 1.18 1.02 1.76 2.69 1.25 3.34.96.1-.74.4-1.25.72-1.54-2.52-.29-5.18-1.26-5.18-5.6 0-1.24.44-2.25 1.17-3.04-.12-.29-.51-1.45.11-3.02 0 0 .96-.31 3.15 1.16.91-.25 1.89-.38 2.86-.38.97 0 1.95.13 2.86.38 2.18-1.47 3.14-1.16 3.14-1.16.62 1.57.23 2.73.11 3.02.73.79 1.17 1.8 1.17 3.04 0 4.35-2.67 5.31-5.21 5.59.41.35.78 1.05.78 2.12 0 1.53-.01 2.76-.01 3.14 0 .31.21.66.79.55 4.5-1.5 7.75-5.75 7.75-10.77C23.34 5.57 18.27.5 12 .5Z"/></svg>`;
 
-// Post-process conformance suite report HTML to inject SIROS navbar + back-link
+// Post-process conformance suite report HTML to inject SIROS branding.
+// Uses marker comments (<!-- siros:brand:* -->) so branding can be cleanly
+// stripped and re-applied regardless of changes to the conformance suite output.
+const SIROS_BRAND_HEAD_START = '<!-- siros:brand:head -->';
+const SIROS_BRAND_HEAD_END   = '<!-- /siros:brand:head -->';
+const SIROS_BRAND_BODY_START = '<!-- siros:brand:body-start -->';
+const SIROS_BRAND_BODY_END   = '<!-- /siros:brand:body-start -->';
+const SIROS_BRAND_BODY_CLOSE_START = '<!-- siros:brand:body-end -->';
+const SIROS_BRAND_BODY_CLOSE_END   = '<!-- /siros:brand:body-end -->';
+
+function stripBranding(html) {
+  // Remove each marker pair and everything between them
+  html = html.replace(new RegExp(`${escapeRegExp(SIROS_BRAND_HEAD_START)}[\\s\\S]*?${escapeRegExp(SIROS_BRAND_HEAD_END)}\\n?`), '');
+  html = html.replace(new RegExp(`${escapeRegExp(SIROS_BRAND_BODY_START)}[\\s\\S]*?${escapeRegExp(SIROS_BRAND_BODY_END)}\\n?`), '');
+  html = html.replace(new RegExp(`${escapeRegExp(SIROS_BRAND_BODY_CLOSE_START)}[\\s\\S]*?${escapeRegExp(SIROS_BRAND_BODY_CLOSE_END)}\\n?`), '');
+  return html;
+}
+
+function escapeRegExp(s) {
+  return s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+}
+
 function brandReportHtml(htmlFile, backUrl, runId) {
   let html = fs.readFileSync(htmlFile, 'utf-8');
-  if (html.includes('class="siros-report-footer"')) return; // fully branded
 
-  // Strip old nav-only branding if present (pre-footer version)
-  if (html.includes('class="siros-report-nav"')) {
-    html = html.replace(/<style>[\s\S]*?\.siros-report-nav[\s\S]*?<\/style>\n/g, '');
-    html = html.replace(/<style>body \{ padding-top: 0 !important; \}<\/style>\n/g, '');
-    html = html.replace(/<nav class="siros-report-nav">[\s\S]*?<\/nav>\n?/, '');
+  // Always strip existing branding first (idempotent re-application)
+  if (html.includes(SIROS_BRAND_HEAD_START)) {
+    html = stripBranding(html);
   }
 
-  const injectedCss = `
+  const brandCss = `
     .siros-report-nav { background: #fff; border-bottom: 1px solid #e0e0e0; position: sticky; top: 0; z-index: 100; font-family: 'Helvetica Neue', Arial, system-ui, sans-serif; }
     .siros-report-nav .sri { max-width: 1400px; margin: 0 auto; padding: 0.6rem 2rem; display: flex; align-items: center; }
     .siros-report-nav .srb { display: flex; align-items: center; gap: 0.6rem; text-decoration: none; color: #1C4587; font-weight: 600; font-size: 1.1rem; }
@@ -157,6 +175,9 @@ function brandReportHtml(htmlFile, backUrl, runId) {
     .siros-report-nav .srl svg { width: 20px; height: 20px; fill: #555; transition: fill 0.2s; }
     .siros-report-nav .srl a:hover svg { fill: #1C4587; }
     .siros-report-container { max-width: 1400px; margin: 0 auto; padding: 1.5rem 2rem 3rem; }
+    .siros-report-container table { border-collapse: collapse; }
+    .siros-report-container table td, .siros-report-container table th { border: 1px solid #d0d7de; padding: 0.4rem 0.6rem; }
+    .siros-report-container #header th { background: #f6f8fa; }
     body { padding: 0 !important; margin: 0 !important; }
     .siros-report-footer { border-top: 1px solid #e0e0e0; margin-top: 3rem; padding: 2.5rem 0; font-size: 0.875rem; color: #555; font-family: 'Helvetica Neue', Arial, system-ui, sans-serif; }
     .siros-report-footer .sfi { max-width: 1400px; margin: 0 auto; padding: 0 2rem; display: flex; align-items: flex-start; justify-content: space-between; gap: 2rem; }
@@ -181,12 +202,17 @@ function brandReportHtml(htmlFile, backUrl, runId) {
 
   const footerHtml = `<footer class="siros-report-footer"><div class="sfi"><div class="sfa"><p class="sfo"><a href="https://siros.org">SIROS Foundation</a></p><a href="mailto:info@siros.org">info@siros.org</a><address>Bredgränd 4<br>111 30 Stockholm<br>Sweden</address></div><nav class="sfn"><a href="https://siros.org">SIROS Foundation</a><a href="https://developers.siros.org">Developer Docs</a><a href="https://compliance.siros.org">Compliance</a><a href="https://trust.siros.org">Trust Lists</a><a href="https://github.com/sirosfoundation" aria-label="SIROS Foundation on GitHub">${GITHUB_SVG}</a></nav></div><div class="sfi"><p class="sbi">Generated by <a href="https://github.com/sirosfoundation/siros-conformance">siros-conformance</a></p></div></footer>`;
 
-  // Inject CSS before </head>
-  html = html.replace('</head>', `<style>${injectedCss}</style>\n</head>`);
+  // Inject CSS before </head> — suite's own <style> is untouched
+  html = html.replace('</head>',
+    `${SIROS_BRAND_HEAD_START}\n<style>${brandCss}</style>\n${SIROS_BRAND_HEAD_END}\n</head>`);
 
-  // Wrap body content: navbar + container div around original content + footer
-  html = html.replace(/<body([^>]*)>/, (match, attrs) => `<body${attrs}>\n${navHtml}\n<div class="siros-report-container">`);
-  html = html.replace('</body>', `</div>\n${footerHtml}\n</body>`);
+  // Inject nav + container wrapper after <body>
+  html = html.replace(/<body([^>]*)>/,
+    (_, attrs) => `<body${attrs}>\n${SIROS_BRAND_BODY_START}\n${navHtml}\n<div class="siros-report-container">\n${SIROS_BRAND_BODY_END}`);
+
+  // Inject container close + footer before </body>
+  html = html.replace('</body>',
+    `${SIROS_BRAND_BODY_CLOSE_START}\n</div>\n${footerHtml}\n${SIROS_BRAND_BODY_CLOSE_END}\n</body>`);
 
   fs.writeFileSync(htmlFile, html);
 }
