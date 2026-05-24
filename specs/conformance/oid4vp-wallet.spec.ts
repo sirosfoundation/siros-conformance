@@ -44,6 +44,36 @@ const VP_VARIANTS = [
       vp_profile: 'plain_vp',
     },
   },
+  {
+    name: 'sd_jwt_vc / x509_san_dns / direct_post.jwt / request_uri_signed / plain_vp',
+    variant: {
+      credential_format: 'sd_jwt_vc',
+      client_id_prefix: 'x509_san_dns',
+      response_mode: 'direct_post.jwt',
+      request_method: 'request_uri_signed',
+      vp_profile: 'plain_vp',
+    },
+  },
+  {
+    name: 'sd_jwt_vc / x509_san_dns / direct_post / request_uri_signed / haip',
+    variant: {
+      credential_format: 'sd_jwt_vc',
+      client_id_prefix: 'x509_san_dns',
+      response_mode: 'direct_post',
+      request_method: 'request_uri_signed',
+      vp_profile: 'haip',
+    },
+  },
+  {
+    name: 'sd_jwt_vc / redirect_uri / direct_post / request_uri_signed / plain_vp',
+    variant: {
+      credential_format: 'sd_jwt_vc',
+      client_id_prefix: 'redirect_uri',
+      response_mode: 'direct_post',
+      request_method: 'request_uri_signed',
+      vp_profile: 'plain_vp',
+    },
+  },
 ];
 
 const VP_PLAN_NAME = 'oid4vp-1final-wallet-test-plan';
