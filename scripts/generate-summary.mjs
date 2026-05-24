@@ -157,6 +157,7 @@ if (meta) {
     lines.push('<summary>Test environment</summary>');
     lines.push('');
     if (meta.targetRepo) lines.push(`- **Target:** ${meta.targetRepo}${meta.targetPr ? ` #${meta.targetPr}` : ''}`);
+    if (meta.goldenRelease) lines.push(`- **Golden release:** \`${meta.goldenRelease}\``);
     if (meta.actor) lines.push(`- **Triggered by:** [@${meta.actor}](https://github.com/${meta.actor})`);
     if (meta.sha) {
       const repo = meta.targetRepo || 'sirosfoundation/siros-conformance';
