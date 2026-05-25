@@ -1,21 +1,21 @@
 # siros-conformance
 
-[![Issuer Conformance](https://github.com/sirosfoundation/siros-conformance/actions/workflows/issuer.yml/badge.svg)](https://github.com/sirosfoundation/siros-conformance/actions/workflows/issuer.yml)
-[![Verifier Conformance](https://github.com/sirosfoundation/siros-conformance/actions/workflows/verifier.yml/badge.svg)](https://github.com/sirosfoundation/siros-conformance/actions/workflows/verifier.yml)
-[![Wallet Conformance](https://github.com/sirosfoundation/siros-conformance/actions/workflows/wallet.yml/badge.svg)](https://github.com/sirosfoundation/siros-conformance/actions/workflows/wallet.yml)
-[![License: BSD-2-Clause](https://img.shields.io/badge/License-BSD_2--Clause-blue.svg)](LICENSE)
-
-OpenID Conformance Suite testing for SIROS ID — issuer, verifier, and wallet.
+[OpenID Conformance Suite](https://www.certification.openid.net/) testing for SIROS ID — issuer, verifier, and wallet.
 
 All services run from **pre-built Docker images** (`ghcr.io/sirosfoundation/*`).
 No local source checkouts required.
 
 ## Prerequisites
 
+- Docker and Docker Compose
+- Node.js 20+
+- An `/etc/hosts` entry:
+
 ```
-# /etc/hosts (required by the conformance suite)
 127.0.0.1 localhost.emobix.co.uk
 ```
+
+Then install dependencies:
 
 ```bash
 make install   # npm ci + playwright chromium
@@ -42,18 +42,68 @@ make down
 
 ## Profiles
 
-| Profile | Compose files | Services |
-|---------|--------------|----------|
-| issuer | vc-services + go-trust + conformance-suite | vc-issuer, vc-apigw, vc-mockas, vc-registry, mongodb, go-trust-allow, conformance (3) |
-| verifier | vc-services + go-trust + conformance-suite | vc-verifier, vc-registry, mongodb, go-trust-allow, conformance (3) |
-| wallet | wallet + go-trust + vc-services + conformance-suite | wallet-frontend, wallet-backend, wallet-registry, go-trust-allow, vc-*, conformance (3) |
+| Profile | Services |
+|---------|----------|
+| `issuer` | vc-issuer, vc-apigw, vc-mockas, vc-registry, mongodb, go-trust-allow, conformance suite |
+| `verifier` | vc-verifier, vc-registry, mongodb, go-trust-allow, conformance suite |
+| `wallet` | wallet-frontend, wallet-backend, wallet-registry, go-trust-allow, vc-*, conformance suite |
 
-## Image overrides (testing PR builds)
+## Filtering by variant
+
+Each test plan runs multiple **variants** — combinations of credential format,
+grant type, response mode, etc. Use Playwright's `--grep` to run a subset:
+
+```bash
+# Only mdoc variants
+npx playwright test specs/conformance/oid4vci-wallet.spec.ts --grep "mdoc"
+
+# Only HAIP variants
+npx playwright test specs/conformance/oid4vp-wallet.spec.ts --grep "haip"
+
+# Only authorization_code grant
+npx playwright test specs/conformance/oid4vci-wallet.spec.ts --grep "authorization_code"
+
+# Only deferred issuance
+npx playwright test specs/conformance/oid4vci-wallet.spec.ts --grep "deferred"
+
+# Combine filters (regex)
+npx playwright test specs/conformance/oid4vci-wallet.spec.ts --grep "mdoc.*deferred"
+```
+
+### Useful quick-test filters
+
+| Goal | Filter | Variants matched |
+|------|--------|-----------------|
+| Core VCI flow | `--grep "pre-authorized_code.*immediate.*by_value"` | 1 of 5 |
+| Core VP flow | `--grep "x509_san_dns.*direct_post/.*plain_vp"` | 1 of 5 |
+| All sd_jwt_vc | `--grep "sd_jwt_vc"` | 4 VCI + 4 VP |
+| All mdoc/iso_mdl | `--grep "mdoc\|iso_mdl"` | 1 VCI + 1 VP |
+| HAIP only | `--grep "haip"` | 1 VP |
+
+### Current variants
+
+**VCI Wallet** (`oid4vci-wallet.spec.ts`):
+- `sd_jwt_vc/pre-authorized_code/immediate/by_value`
+- `sd_jwt_vc/authorization_code/immediate/by_value`
+- `sd_jwt_vc/pre-authorized_code/immediate/by_reference`
+- `sd_jwt_vc/pre-authorized_code/deferred/by_value`
+- `mdoc/pre-authorized_code/immediate/by_value`
+
+**VP Wallet** (`oid4vp-wallet.spec.ts`):
+- `sd_jwt_vc/x509_san_dns/direct_post/request_uri_signed/plain_vp`
+- `sd_jwt_vc/x509_san_dns/direct_post.jwt/request_uri_signed/plain_vp`
+- `sd_jwt_vc/x509_san_dns/direct_post/request_uri_signed/haip`
+- `sd_jwt_vc/redirect_uri/direct_post/request_uri_signed/plain_vp`
+- `iso_mdl/x509_san_dns/direct_post/request_uri_signed/plain_vp`
+
+**Issuer** (`oid4vci-issuer.spec.ts`): 1 variant — `sd_jwt_vc/pre-authorized_code/immediate`
+
+**Verifier** (`oid4vp-verifier.spec.ts`): 1 variant — `sd_jwt_vc/x509_san_dns/direct_post/request_uri_signed`
+
+## Image overrides
 
 All Docker images default to `:latest` but can be overridden to test
 images built from a PR branch.
-
-### Available services
 
 | Service name | Env var | Default image |
 |-------------|---------|---------------|
@@ -67,164 +117,35 @@ images built from a PR branch.
 | `wallet-backend` / `go-wallet-backend` | `WALLET_BACKEND_IMAGE` | `ghcr.io/sirosfoundation/go-wallet-backend:latest` |
 | `wallet-registry` / `go-wallet-registry` | `WALLET_REGISTRY_IMAGE` | `ghcr.io/sirosfoundation/go-wallet-registry:latest` |
 
-### Local override
-
 ```bash
 VC_ISSUER_IMAGE=ghcr.io/sirosfoundation/vc-issuer:pr-42 make up-issuer
 ```
 
-### Workflow dispatch override
+Short tags (`pr-42`, `sha-abc123`) are expanded to the default registry
+in CI. Full image references are used as-is.
 
-```
-gh workflow run issuer.yml \
-  -f image-overrides='{"vc-issuer":"pr-42"}' \
-  -f target-repo=sirosfoundation/vc \
-  -f target-pr=99
-```
+## Viewing results
 
-Short tags (`pr-42`, `sha-abc123`) are expanded to the default registry.
-Full image references (`ghcr.io/other-org/image:tag`) are used as-is.
-
-### PR description syntax
-
-PR authors in connected repos can declare dependencies using a
-fenced block in the PR description:
-
-~~~markdown
-```conformance-deps
-vc-issuer: pr-42
-wallet-frontend: sha-abc123
-go-wallet-backend: feature-branch
-```
-~~~
-
-The `parse-deps.mjs` script extracts these and converts them to
-image override environment variables.
-
-### Triggering from a PR comment (`@conformance`)
-
-The recommended way to run conformance tests from a connected repo is
-via PR comments. Install
-[`examples/conformance-comment.yml`](examples/conformance-comment.yml) into
-your repo's `.github/workflows/` directory. Then, on any PR, add a comment:
-
-```
-@conformance
-```
-
-This triggers **all** profiles with `:latest` images. To be more specific:
-
-```
-@conformance issuer                              # issuer profile only
-@conformance wallet                              # wallet profile only
-@conformance vc-issuer:pr-42                     # auto-detects issuer profile
-@conformance wallet wallet-frontend:pr-111       # explicit profile + override
-@conformance vc-issuer:pr-42 go-trust:sha-abc    # multiple overrides, auto-detect
-```
-
-Image names are bare service names from the table above. Tags like `pr-42`
-or `sha-abc123` are expanded to the default `ghcr.io/sirosfoundation/`
-registry. Full image refs (`ghcr.io/other-org/image:tag`) are used as-is.
-
-When the comment is detected, the workflow:
-1. Reacts with 🚀 and posts a status comment
-2. Fires `repository_dispatch` on `siros-conformance` for each profile
-3. Conformance tests run with the specified images
-4. Results are posted back as a comment on the originating PR
-
-Required secrets (in the connected repo):
-- `CONFORMANCE_DISPATCH_TOKEN` — PAT with `repo` scope for `siros-conformance`
-
-Required secrets (in siros-conformance):
-- `CONFORMANCE_PR_TOKEN` — PAT with `repo` scope for the connected repo
-
-### Cross-repo CI trigger (repository_dispatch)
-
-For automated CI-triggered conformance (e.g. after image build),
-see [`examples/caller-workflow.yml`](examples/caller-workflow.yml).
-The flow:
-
-1. PR CI in repo X builds and pushes `ghcr.io/.../service:pr-N`
-2. Caller workflow fires `repository_dispatch` on `siros-conformance`
-3. Conformance tests run with the PR image
-4. Results are posted as a comment on the PR in repo X
-
-## Conformance reports
-
-Each test exports an HTML report ZIP via `GET /api/plan/exporthtml/{planId}`
-and a structured JSON summary (`*-summary.json`).
-Reports are saved to `conformance-results/` and uploaded as GitHub Actions artifacts (90-day retention).
-
-### Publishing options
-
-#### 1. GitHub Actions Job Summary (automatic)
-
-Every CI run writes a markdown summary to the **GitHub Actions Job Summary**
-tab — visible directly in the workflow run page without downloading artifacts.
-
-#### 2. PR Comments on connected repos
-
-Workflows accept `target-repo` and `target-pr` inputs to post a conformance
-summary comment on a PR in any connected repository (e.g. `sirosfoundation/go-wallet-backend`).
-
-**Manual dispatch with PR comment:**
-
-```
-gh workflow run issuer.yml \
-  -f target-repo=sirosfoundation/go-wallet-backend \
-  -f target-pr=42
-```
-
-The comment is upserted (updated in place on re-runs) and includes a table
-of pass/fail per profile, collapsible failure details, and links to the CI
-run and conformance suite plan detail page.
-
-**Required secret:** `CONFORMANCE_PR_TOKEN` — a PAT or GitHub App token with
-`repo` scope for the target repository. Not needed for PRs within
-siros-conformance itself.
-
-#### 3. Local HTML reports
+Reports are saved to `conformance-results/`:
 
 ```bash
 make test-issuer
-# Reports in conformance-results/
 unzip conformance-results/conformance-report-*.zip -d /tmp/report
 open /tmp/report/index.html
 ```
 
-#### 4. Markdown from CLI
+Or generate a markdown summary:
 
 ```bash
 node scripts/generate-summary.mjs ./conformance-results
 ```
 
-#### 5. OpenID Foundation Certification
+## Adding a new variant
 
-For formal OIDF certification, run your tests against the **production
-conformance suite** at `https://www.certification.openid.net/` (not the local
-Docker instance). Then:
-
-1. Use the **"Publish for certification"** button in the conformance suite UI
-   to get a ZIP of your test logs.
-2. Pay the certification fee at
-   [openid.net/foundation/members/certifications/new](https://openid.net/foundation/members/certifications/new).
-3. Submit at [submissions.openid.net](https://submissions.openid.net/) with
-   the ZIP, payment code, and declaration of conformance.
-
-See [How to certify your implementation](https://openid.net/how-to-certify-your-implementation/)
-for full instructions.
-
-## CI
-
-Three separate GitHub Actions workflows run weekly (Monday 06:00 UTC),
-on push to `main`, and via manual dispatch:
-
-- `.github/workflows/issuer.yml`
-- `.github/workflows/verifier.yml`
-- `.github/workflows/wallet.yml`
-
-The conformance suite image uses `:latest` — every CI run automatically
-picks up the newest version.
+1. Add an entry to `VCI_VARIANTS` or `VP_VARIANTS` in the spec file
+2. If the variant needs different keys or endpoints, create a config in `configs/conformance/`
+3. Run locally with `make up-wallet && make test-wallet`
+4. Open a PR
 
 ## Directory structure
 
@@ -233,10 +154,17 @@ compose/                    # Docker Compose files (image-only, no builds)
 configs/conformance/        # Conformance suite test plan configurations
 fixtures/                   # VC service config, PKI, metadata, test users
 helpers/                    # Playwright helper modules
-specs/conformance/          # Test specs
-scripts/                    # Summary generation and publishing scripts
+specs/conformance/          # Test specs (variant definitions here)
+scripts/                    # Summary generation, comment parsing, publishing
 .github/workflows/          # CI workflows
 ```
+
+## CI and `@conformance` triggers
+
+CI workflows run weekly, on push to `main`, and via manual/repository dispatch.
+For the full CI documentation — including `@conformance` PR comment syntax,
+image overrides, and cross-repo triggers — see the
+[Running Conformance Tests](https://sirosfoundation.github.io/docs/howto/running-conformance-tests) guide.
 
 ## License
 

@@ -6,8 +6,11 @@
  *   @conformance                              → run all profiles, :latest images
  *   @conformance issuer                       → run issuer profile only
  *   @conformance wallet                       → run wallet profile only
+ *   @conformance wallet/mdoc                  → wallet profile, only mdoc variants
+ *   @conformance wallet/haip                  → wallet profile, only haip variants
  *   @conformance vc-issuer:pr-42              → auto-detect profile, override image
  *   @conformance issuer vc-issuer:pr-42       → explicit profile + override
+ *   @conformance wallet/mdoc wallet-frontend:pr-111 → variant filter + override
  *   @conformance wallet-frontend:pr-111 go-wallet-backend:sha-abc123
  *   @conformance ghcr.io/other/image:tag      → full image ref
  *
@@ -20,6 +23,7 @@
  *   {
  *     "profiles": ["issuer"],
  *     "image-overrides": {"vc-issuer": "pr-42"},
+ *     "variant-filter": "",
  *     "dispatch-events": ["conformance-issuer"]
  *   }
  *
@@ -97,8 +101,21 @@ const tokens = payload.split(/\s+/).filter(Boolean);
 
 const explicitProfiles = [];
 const imageOverrides = {};
+let variantFilter = '';
 
 for (const token of tokens) {
+  // Check if it's a profile/variant pair (e.g. wallet/mdoc)
+  const slashIdx = token.indexOf('/');
+  if (slashIdx !== -1 && !token.slice(0, slashIdx).includes('.') && !token.slice(0, slashIdx).includes(':')) {
+    const profilePart = token.slice(0, slashIdx).toLowerCase();
+    const variantPart = token.slice(slashIdx + 1);
+    if (VALID_PROFILES.has(profilePart) && variantPart) {
+      explicitProfiles.push(profilePart);
+      variantFilter = variantPart;
+      continue;
+    }
+  }
+
   // Check if it's a profile name
   if (VALID_PROFILES.has(token.toLowerCase())) {
     explicitProfiles.push(token.toLowerCase());
@@ -166,6 +183,7 @@ if (explicitProfiles.includes('all') || (explicitProfiles.length === 0 && Object
 const result = {
   profiles,
   'image-overrides': imageOverrides,
+  'variant-filter': variantFilter,
   'dispatch-events': profiles.map(p => PROFILE_TO_EVENT[p]),
 };
 

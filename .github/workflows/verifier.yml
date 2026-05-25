@@ -23,6 +23,11 @@ on:
         required: false
         default: ''
         type: string
+      variant-filter:
+        description: 'Playwright --grep filter for variant selection (e.g. x509_san_dns)'
+        required: false
+        default: ''
+        type: string
   repository_dispatch:
     types: [conformance-verifier]
   schedule:
@@ -98,8 +103,19 @@ jobs:
           npm ci
           npx playwright install chrome --with-deps
 
+      - name: Resolve variant filter
+        id: variant
+        run: |
+          FILTER="${{ inputs.variant-filter || github.event.client_payload.variant-filter || '' }}"
+          if [ -n "$FILTER" ]; then
+            echo "grep=--grep=$FILTER" >> $GITHUB_OUTPUT
+            echo "Variant filter: $FILTER"
+          else
+            echo "grep=" >> $GITHUB_OUTPUT
+          fi
+
       - name: Run verifier conformance tests
-        run: npx playwright test specs/conformance/oid4vp-verifier.spec.ts
+        run: npx playwright test specs/conformance/oid4vp-verifier.spec.ts ${{ steps.variant.outputs.grep }}
         env:
           NODE_TLS_REJECT_UNAUTHORIZED: '0'
           CONFORMANCE_URL: https://localhost.emobix.co.uk:8443/
