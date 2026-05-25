@@ -48,7 +48,7 @@ const SERVICE_PROFILES = {
   'vc-apigw':          ['issuer'],
   'vc-mockas':         ['issuer'],
   'vc-verifier':       ['verifier'],
-  'vc-registry':       ['issuer', 'verifier', 'wallet'],
+  'vc-registry':       ['issuer', 'verifier'],
   'go-trust':          ['issuer', 'verifier', 'wallet'],
   'wallet-frontend':   ['wallet'],
   'go-wallet-backend': ['wallet'],

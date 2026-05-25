@@ -18,6 +18,16 @@ on:
         required: false
         default: ''
         type: string
+      golden-release:
+        description: 'Golden release name (default: from golden-releases.yaml)'
+        required: false
+        default: ''
+        type: string
+      variant-filter:
+        description: 'Playwright --grep filter for variant selection (e.g. mdoc, haip)'
+        required: false
+        default: ''
+        type: string
   repository_dispatch:
     types: [conformance-wallet]
   schedule:
@@ -88,7 +98,6 @@ jobs:
           docker compose \
             -f compose/wallet.yml \
             -f compose/go-trust.yml \
-            -f compose/vc-services.yml \
             -f compose/conformance-suite.yml \
             pull
 
@@ -97,15 +106,12 @@ jobs:
           docker compose \
             -f compose/wallet.yml \
             -f compose/go-trust.yml \
-            -f compose/vc-services.yml \
             -f compose/conformance-suite.yml \
             up -d
           echo "Waiting for wallet backend..."
           timeout 120 bash -c 'until curl -sf http://localhost:8081/health 2>/dev/null || curl -sf http://localhost:8080/health 2>/dev/null; do sleep 5; done'
           echo "Waiting for wallet frontend..."
           timeout 60 bash -c 'until curl -sf http://localhost:3000/ 2>/dev/null; do sleep 5; done'
-          echo "Waiting for VC services..."
-          timeout 120 bash -c 'until curl -sf http://localhost:9003/health 2>/dev/null; do sleep 5; done'
           echo "Waiting for conformance suite..."
           timeout 180 bash -c 'until curl -fsk https://localhost.emobix.co.uk:8443/login.html; do sleep 10; done'
           echo "All services ready"
@@ -134,11 +140,6 @@ jobs:
           WALLET_FRONTEND_IMAGE: ${{ env.WALLET_FRONTEND_IMAGE || 'ghcr.io/sirosfoundation/wallet-frontend:unstable' }}
           WALLET_BACKEND_IMAGE: ${{ env.WALLET_BACKEND_IMAGE || 'ghcr.io/sirosfoundation/go-wallet-backend:latest' }}
           GO_TRUST_IMAGE: ${{ env.GO_TRUST_IMAGE || '' }}
-          VC_ISSUER_IMAGE: ${{ env.VC_ISSUER_IMAGE || '' }}
-          VC_VERIFIER_IMAGE: ${{ env.VC_VERIFIER_IMAGE || '' }}
-          VC_APIGW_IMAGE: ${{ env.VC_APIGW_IMAGE || '' }}
-          VC_REGISTRY_IMAGE: ${{ env.VC_REGISTRY_IMAGE || '' }}
-          VC_MOCKAS_IMAGE: ${{ env.VC_MOCKAS_IMAGE || '' }}
           GOLDEN_RELEASE: ${{ inputs.golden-release || github.event.client_payload.golden-release || '' }}
 
       - name: Run wallet VP conformance tests
@@ -156,11 +157,6 @@ jobs:
           WALLET_FRONTEND_IMAGE: ${{ env.WALLET_FRONTEND_IMAGE || 'ghcr.io/sirosfoundation/wallet-frontend:unstable' }}
           WALLET_BACKEND_IMAGE: ${{ env.WALLET_BACKEND_IMAGE || 'ghcr.io/sirosfoundation/go-wallet-backend:latest' }}
           GO_TRUST_IMAGE: ${{ env.GO_TRUST_IMAGE || '' }}
-          VC_ISSUER_IMAGE: ${{ env.VC_ISSUER_IMAGE || '' }}
-          VC_VERIFIER_IMAGE: ${{ env.VC_VERIFIER_IMAGE || '' }}
-          VC_APIGW_IMAGE: ${{ env.VC_APIGW_IMAGE || '' }}
-          VC_REGISTRY_IMAGE: ${{ env.VC_REGISTRY_IMAGE || '' }}
-          VC_MOCKAS_IMAGE: ${{ env.VC_MOCKAS_IMAGE || '' }}
           GOLDEN_RELEASE: ${{ inputs.golden-release || github.event.client_payload.golden-release || '' }}
 
       - name: Publish results to GitHub Pages
@@ -203,7 +199,6 @@ jobs:
           docker compose \
             -f compose/wallet.yml \
             -f compose/go-trust.yml \
-            -f compose/vc-services.yml \
             -f compose/conformance-suite.yml \
             logs --tail=200 > docker-logs.txt 2>&1
 
@@ -221,7 +216,6 @@ jobs:
           docker compose \
             -f compose/wallet.yml \
             -f compose/go-trust.yml \
-            -f compose/vc-services.yml \
             -f compose/conformance-suite.yml \
             down -v
 
