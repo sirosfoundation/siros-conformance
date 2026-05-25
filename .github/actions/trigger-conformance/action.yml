@@ -1,0 +1,121 @@
+name: Trigger Conformance Tests
+description: >
+  Parse an @conformance comment and dispatch conformance test runs
+  to siros-conformance. Posts a status comment on the originating PR.
+
+inputs:
+  comment-body:
+    description: 'The PR comment body to parse'
+    required: true
+  dispatch-token:
+    description: 'PAT with Contents read/write on sirosfoundation/siros-conformance'
+    required: true
+  github-token:
+    description: 'Token for reacting and commenting on the PR (usually github.token)'
+    required: true
+  repo:
+    description: 'The originating repository (owner/repo)'
+    required: true
+  pr-number:
+    description: 'The PR number to post results to'
+    required: true
+  comment-id:
+    description: 'The comment ID to react to'
+    required: true
+
+runs:
+  using: composite
+  steps:
+    - name: Acknowledge trigger
+      shell: bash
+      env:
+        GH_TOKEN: ${{ inputs.github-token }}
+      run: |
+        gh api repos/${{ inputs.repo }}/issues/comments/${{ inputs.comment-id }}/reactions \
+          -f content=rocket \
+          --silent
+
+    - name: Checkout siros-conformance scripts
+      uses: actions/checkout@v4
+      with:
+        repository: sirosfoundation/siros-conformance
+        ref: main
+        sparse-checkout: scripts
+        path: _conformance
+
+    - uses: actions/setup-node@v4
+      with:
+        node-version: '22'
+
+    - name: Parse comment
+      id: parse
+      shell: bash
+      env:
+        COMMENT_BODY: ${{ inputs.comment-body }}
+      run: |
+        PARSED=$(echo "$COMMENT_BODY" | node _conformance/scripts/parse-comment.mjs)
+        echo "Parsed: ${PARSED}"
+        EOF=$(dd if=/dev/urandom bs=15 count=1 status=none | base64)
+        echo "parsed<<$EOF" >> $GITHUB_OUTPUT
+        echo "$PARSED" >> $GITHUB_OUTPUT
+        echo "$EOF" >> $GITHUB_OUTPUT
+
+    - name: Dispatch conformance tests
+      shell: bash
+      env:
+        GH_TOKEN: ${{ inputs.dispatch-token }}
+        PARSED: ${{ steps.parse.outputs.parsed }}
+        PR_NUMBER: ${{ inputs.pr-number }}
+        REPO: ${{ inputs.repo }}
+      run: |
+        EVENTS=$(echo "$PARSED" | jq -r '.["dispatch-events"][]')
+        OVERRIDES=$(echo "$PARSED" | jq -c '.["image-overrides"]')
+        VARIANT_FILTER=$(echo "$PARSED" | jq -r '.["variant-filter"]')
+
+        for EVENT in $EVENTS; do
+          echo "Dispatching ${EVENT} with overrides=${OVERRIDES} variant-filter=${VARIANT_FILTER}"
+          gh api repos/sirosfoundation/siros-conformance/dispatches \
+            -f event_type="${EVENT}" \
+            -f "client_payload[target-repo]=${REPO}" \
+            -f "client_payload[target-pr]=${PR_NUMBER}" \
+            -f "client_payload[image-overrides]=${OVERRIDES}" \
+            -f "client_payload[variant-filter]=${VARIANT_FILTER}"
+        done
+
+    - name: Post status comment
+      shell: bash
+      env:
+        GH_TOKEN: ${{ inputs.github-token }}
+        PARSED: ${{ steps.parse.outputs.parsed }}
+        REPO: ${{ inputs.repo }}
+        PR_NUMBER: ${{ inputs.pr-number }}
+      run: |
+        PROFILES=$(echo "$PARSED" | jq -r '.profiles | join(", ")')
+        OVERRIDES=$(echo "$PARSED" | jq -r '
+          .["image-overrides"] |
+          to_entries |
+          if length == 0 then "none (using :latest)"
+          else map("\(.key):\(.value)") | join(", ")
+          end
+        ')
+        VARIANT_FILTER=$(echo "$PARSED" | jq -r '.["variant-filter"] // empty')
+        RUN_URL="https://github.com/sirosfoundation/siros-conformance/actions"
+
+        VARIANT_ROW=""
+        if [ -n "${VARIANT_FILTER}" ]; then
+          VARIANT_ROW="| **Variant filter** | ${VARIANT_FILTER} |"
+        fi
+
+        BODY="🚀 **Conformance tests triggered**
+
+        | | |
+        |---|---|
+        | **Profiles** | ${PROFILES} |
+        | **Image overrides** | ${OVERRIDES} |
+        ${VARIANT_ROW}
+        | **Results** | [siros-conformance actions](${RUN_URL}) |
+
+        Results will be posted here when complete."
+
+        gh api repos/${REPO}/issues/${PR_NUMBER}/comments \
+          -f body="${BODY}"
