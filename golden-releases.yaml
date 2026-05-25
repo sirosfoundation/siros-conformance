@@ -17,8 +17,7 @@ releases:
     date: "2026-05-24"
     images:
       wallet-frontend:   v0.5.0-1-sirosid.5
-      wallet-backend:    v0.5.2
-      wallet-registry:   v0.5.2
+      go-wallet-backend: v0.5.2
       go-trust:          v0.5.0
       vc-issuer:         v0.5.5-sirosid.0
       vc-verifier:       v0.5.5-sirosid.0

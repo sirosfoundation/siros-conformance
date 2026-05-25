@@ -43,10 +43,7 @@ const SERVICE_MAP = {
   'vc-mockas':         { env: 'VC_MOCKAS_IMAGE',          image: 'ghcr.io/sirosfoundation/vc-mockas' },
   'go-trust':          { env: 'GO_TRUST_IMAGE',          image: 'ghcr.io/sirosfoundation/go-trust' },
   'wallet-frontend':   { env: 'WALLET_FRONTEND_IMAGE',   image: 'ghcr.io/sirosfoundation/wallet-frontend' },
-  'wallet-backend':    { env: 'WALLET_BACKEND_IMAGE',    image: 'ghcr.io/sirosfoundation/go-wallet-backend' },
   'go-wallet-backend': { env: 'WALLET_BACKEND_IMAGE',    image: 'ghcr.io/sirosfoundation/go-wallet-backend' },
-  'wallet-registry':   { env: 'WALLET_REGISTRY_IMAGE',   image: 'ghcr.io/sirosfoundation/go-wallet-registry' },
-  'go-wallet-registry':{ env: 'WALLET_REGISTRY_IMAGE',   image: 'ghcr.io/sirosfoundation/go-wallet-registry' },
 };
 
 // ── Parse arguments ────────────────────────────────────────────────────────

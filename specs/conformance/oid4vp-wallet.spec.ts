@@ -441,8 +441,7 @@ test.describe('OID4VP Wallet Conformance Suite', () => {
               ref: process.env.GITHUB_REF || '',
               images: {
                 'wallet-frontend': process.env.WALLET_FRONTEND_IMAGE || '',
-                'wallet-backend': process.env.WALLET_BACKEND_IMAGE || '',
-                'wallet-registry': process.env.WALLET_REGISTRY_IMAGE || '',
+                'go-wallet-backend': process.env.WALLET_BACKEND_IMAGE || '',
                 'go-trust': process.env.GO_TRUST_IMAGE || '',
                 'vc-issuer': process.env.VC_ISSUER_IMAGE || '',
                 'vc-verifier': process.env.VC_VERIFIER_IMAGE || '',

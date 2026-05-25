@@ -65,12 +65,7 @@ services:
       - WALLET_HTTP_CLIENT_ALLOW_HTTP=true
       # Skip TLS verification for conformance suite's self-signed cert
       - WALLET_HTTP_CLIENT_INSECURE_SKIP_VERIFY=true
-
-  wallet-registry:
-    image: ${WALLET_REGISTRY_IMAGE:-ghcr.io/sirosfoundation/go-wallet-registry:latest}
-    container_name: wallet-registry
-    network_mode: host
-    environment:
+      # Registry (included via --mode=all)
       - REGISTRY_SERVER_HOST=0.0.0.0
       - REGISTRY_SERVER_PORT=8097
       - REGISTRY_SOURCE_URL=https://registry.siros.org/.well-known/vctm-registry.json

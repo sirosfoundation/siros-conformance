@@ -46,7 +46,7 @@ make down
 |---------|----------|
 | `issuer` | vc-issuer, vc-apigw, vc-mockas, vc-registry, mongodb, go-trust-allow, conformance suite |
 | `verifier` | vc-verifier, vc-registry, mongodb, go-trust-allow, conformance suite |
-| `wallet` | wallet-frontend, wallet-backend, wallet-registry, go-trust-allow, vc-*, conformance suite |
+| `wallet` | wallet-frontend, go-wallet-backend (with registry), go-trust-allow, vc-*, conformance suite |
 
 ## Filtering by variant
 
@@ -114,8 +114,7 @@ images built from a PR branch.
 | `vc-mockas` | `VC_MOCKAS_IMAGE` | `ghcr.io/sirosfoundation/vc-mockas:latest` |
 | `go-trust` | `GO_TRUST_IMAGE` | `ghcr.io/sirosfoundation/go-trust:latest` |
 | `wallet-frontend` | `WALLET_FRONTEND_IMAGE` | `ghcr.io/sirosfoundation/wallet-frontend:latest` |
-| `wallet-backend` / `go-wallet-backend` | `WALLET_BACKEND_IMAGE` | `ghcr.io/sirosfoundation/go-wallet-backend:latest` |
-| `wallet-registry` / `go-wallet-registry` | `WALLET_REGISTRY_IMAGE` | `ghcr.io/sirosfoundation/go-wallet-registry:latest` |
+| `go-wallet-backend` | `WALLET_BACKEND_IMAGE` | `ghcr.io/sirosfoundation/go-wallet-backend:latest` |
 
 ```bash
 VC_ISSUER_IMAGE=ghcr.io/sirosfoundation/vc-issuer:pr-42 make up-issuer
