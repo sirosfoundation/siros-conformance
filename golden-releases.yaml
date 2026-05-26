@@ -19,8 +19,8 @@ releases:
       wallet-frontend:   0.5.0-1-sirosid.5
       go-wallet-backend: 0.5.2
       go-trust:          0.5.0
-      vc-issuer:         v0.5.5-sirosid.0
-      vc-verifier:       v0.5.5-sirosid.0
-      vc-apigw:          v0.5.5-sirosid.0
-      vc-registry:       v0.5.5-sirosid.0
-      vc-mockas:          v0.5.5-sirosid.0
+      vc-issuer:         v0.5.0-sirosid.4
+      vc-verifier:       v0.5.0-sirosid.4
+      vc-apigw:          v0.5.0-sirosid.4
+      vc-registry:       v0.5.0-sirosid.4
+      vc-mockas:          v0.5.0-sirosid.4
