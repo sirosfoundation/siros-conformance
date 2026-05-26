@@ -16,8 +16,7 @@
  *
  * Image name shortcuts (bare names without registry prefix):
  *   vc-issuer, vc-verifier, vc-apigw, vc-registry, vc-mockas,
- *   go-trust, wallet-frontend, wallet-backend, go-wallet-backend,
- *   wallet-registry, go-wallet-registry
+ *   go-trust, wallet-frontend, go-wallet-backend
  *
  * Output (JSON to stdout):
  *   {
@@ -40,8 +39,7 @@ import * as fs from 'fs';
 const SERVICE_NAMES = new Set([
   'vc-registry', 'vc-issuer', 'vc-verifier', 'vc-apigw', 'vc-mockas',
   'go-trust',
-  'wallet-frontend', 'wallet-backend', 'go-wallet-backend',
-  'wallet-registry', 'go-wallet-registry',
+  'wallet-frontend', 'go-wallet-backend',
 ]);
 
 // Service → which profile(s) it belongs to
@@ -50,13 +48,10 @@ const SERVICE_PROFILES = {
   'vc-apigw':          ['issuer'],
   'vc-mockas':         ['issuer'],
   'vc-verifier':       ['verifier'],
-  'vc-registry':       ['issuer', 'verifier', 'wallet'],
+  'vc-registry':       ['issuer', 'verifier'],
   'go-trust':          ['issuer', 'verifier', 'wallet'],
   'wallet-frontend':   ['wallet'],
-  'wallet-backend':    ['wallet'],
   'go-wallet-backend': ['wallet'],
-  'wallet-registry':   ['wallet'],
-  'go-wallet-registry':['wallet'],
 };
 
 const VALID_PROFILES = new Set(['issuer', 'verifier', 'wallet', 'all']);
