@@ -42,6 +42,24 @@ const VP_VERIFIER_VARIANTS = [
       request_method: 'request_uri_signed',
     },
   },
+  {
+    name: 'sd_jwt_vc / x509_san_dns / direct_post.jwt / request_uri_signed',
+    variant: {
+      credential_format: 'sd_jwt_vc',
+      client_id_prefix: 'x509_san_dns',
+      response_mode: 'direct_post.jwt',
+      request_method: 'request_uri_signed',
+    },
+  },
+  {
+    name: 'sd_jwt_vc / redirect_uri / direct_post / request_uri_signed',
+    variant: {
+      credential_format: 'sd_jwt_vc',
+      client_id_prefix: 'redirect_uri',
+      response_mode: 'direct_post',
+      request_method: 'request_uri_signed',
+    },
+  },
 ];
 
 const VP_RP_PLAN_NAME = 'oid4vp-1final-rp-test-plan';

@@ -97,6 +97,7 @@ jobs:
         run: |
           docker compose \
             -f compose/wallet.yml \
+            -f compose/vc-services.yml \
             -f compose/go-trust.yml \
             -f compose/conformance-suite.yml \
             pull
@@ -105,6 +106,7 @@ jobs:
         run: |
           docker compose \
             -f compose/wallet.yml \
+            -f compose/vc-services.yml \
             -f compose/go-trust.yml \
             -f compose/conformance-suite.yml \
             up -d
@@ -112,6 +114,8 @@ jobs:
           timeout 120 bash -c 'until curl -sf http://localhost:8081/health 2>/dev/null || curl -sf http://localhost:8080/health 2>/dev/null; do sleep 5; done'
           echo "Waiting for wallet frontend..."
           timeout 60 bash -c 'until curl -sf http://localhost:3000/ 2>/dev/null; do sleep 5; done'
+          echo "Waiting for VC services (for VP credential pre-loading)..."
+          timeout 120 bash -c 'until curl -sf http://localhost:9003/.well-known/oauth-authorization-server 2>/dev/null; do sleep 5; done'
           echo "Waiting for conformance suite..."
           timeout 180 bash -c 'until curl -fsk https://localhost.emobix.co.uk:8443/login.html; do sleep 10; done'
           echo "All services ready"
@@ -198,6 +202,7 @@ jobs:
         run: |
           docker compose \
             -f compose/wallet.yml \
+            -f compose/vc-services.yml \
             -f compose/go-trust.yml \
             -f compose/conformance-suite.yml \
             logs --tail=200 > docker-logs.txt 2>&1
@@ -215,6 +220,7 @@ jobs:
         run: |
           docker compose \
             -f compose/wallet.yml \
+            -f compose/vc-services.yml \
             -f compose/go-trust.yml \
             -f compose/conformance-suite.yml \
             down -v
