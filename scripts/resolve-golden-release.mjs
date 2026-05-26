@@ -69,11 +69,11 @@ function parseSimpleYaml(text) {
 // ── Service → env var mapping (matches parse-deps.mjs) ────────────────────
 
 const SERVICE_MAP = {
-  'vc-registry':       { env: 'VC_REGISTRY_IMAGE',       image: 'ghcr.io/sirosfoundation/vc-registry' },
-  'vc-issuer':         { env: 'VC_ISSUER_IMAGE',         image: 'ghcr.io/sirosfoundation/vc-issuer' },
-  'vc-verifier':       { env: 'VC_VERIFIER_IMAGE',       image: 'ghcr.io/sirosfoundation/vc-verifier' },
-  'vc-apigw':          { env: 'VC_APIGW_IMAGE',          image: 'ghcr.io/sirosfoundation/vc-apigw' },
-  'vc-mockas':         { env: 'VC_MOCKAS_IMAGE',          image: 'ghcr.io/sirosfoundation/vc-mockas' },
+  'vc-registry':       { env: 'VC_REGISTRY_IMAGE',       image: 'ghcr.io/sirosfoundation/vc/registry' },
+  'vc-issuer':         { env: 'VC_ISSUER_IMAGE',         image: 'ghcr.io/sirosfoundation/vc/issuer' },
+  'vc-verifier':       { env: 'VC_VERIFIER_IMAGE',       image: 'ghcr.io/sirosfoundation/vc/verifier' },
+  'vc-apigw':          { env: 'VC_APIGW_IMAGE',          image: 'ghcr.io/sirosfoundation/vc/apigw' },
+  'vc-mockas':         { env: 'VC_MOCKAS_IMAGE',          image: 'ghcr.io/sirosfoundation/vc/mockas' },
   'go-trust':          { env: 'GO_TRUST_IMAGE',          image: 'ghcr.io/sirosfoundation/go-trust' },
   'wallet-frontend':   { env: 'WALLET_FRONTEND_IMAGE',   image: 'ghcr.io/sirosfoundation/wallet-frontend' },
   'go-wallet-backend': { env: 'WALLET_BACKEND_IMAGE',    image: 'ghcr.io/sirosfoundation/go-wallet-backend' },
