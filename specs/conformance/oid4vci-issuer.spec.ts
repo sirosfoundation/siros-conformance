@@ -41,6 +41,16 @@ const VCI_ISSUER_VARIANTS = [
       fapi_profile: 'vci',
     },
   },
+  {
+    name: 'sd_jwt_vc / authorization_code / immediate',
+    variant: {
+      credential_format: 'sd_jwt_vc',
+      vci_grant_type: 'authorization_code',
+      vci_credential_issuance_mode: 'immediate',
+      sender_constrain: 'dpop',
+      fapi_profile: 'vci',
+    },
+  },
 ];
 
 const VCI_ISSUER_PLAN_NAME = 'oid4vci-1_0-issuer-test-plan';

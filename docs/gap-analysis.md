@@ -1,17 +1,17 @@
 # Conformance Suite — Gap Analysis & Roadmap
 
-> Last updated: 2026-05-24
+> Last updated: 2026-05-26
 
 ## Current State
 
-We run **4 test plans** with **1 variant each**:
+We run **4 test plans** with multiple variants:
 
-| Plan | Variant | Modules |
-|------|---------|---------|
-| `oid4vci-1_0-wallet-test-plan` | `sd_jwt_vc / pre_authorization_code / immediate / by_value` | 4 wallet |
-| `oid4vp-1final-wallet-test-plan` | `sd_jwt_vc / x509_san_dns / direct_post / request_uri_signed / plain_vp` | 15 wallet |
-| `oid4vci-1_0-issuer-test-plan` | `sd_jwt_vc / pre_authorization_code / immediate` | ~20 issuer |
-| `oid4vp-1final-verifier-test-plan` | `sd_jwt_vc / x509_san_dns / direct_post / request_uri_signed` | ~11 verifier |
+| Plan | Variants | Modules |
+|------|----------|---------|
+| `oid4vci-1_0-wallet-test-plan` | 5 (sd_jwt_vc: pre-auth/auth_code/by_reference/deferred; mdoc: pre-auth) | 4 wallet |
+| `oid4vp-1final-wallet-test-plan` | 5 (sd_jwt_vc: direct_post/direct_post.jwt/haip/redirect_uri; iso_mdl) | 15 wallet |
+| `oid4vci-1_0-issuer-test-plan` | 2 (pre-auth, auth_code) | ~20 issuer |
+| `oid4vp-1final-verifier-test-plan` | 3 (x509+direct_post, x509+direct_post.jwt, redirect_uri) | ~11 verifier |
 
 The suite supports **12 test plans** for OID4VCI/OID4VP with dozens of variant
 combinations per plan. We exercise a small fraction of the available test
@@ -24,23 +24,30 @@ surface.
 ### P0 — Same config, just add a variant entry
 
 These require no wallet feature work and no new config files. Just add an entry
-to `VCI_VARIANTS` / `VP_VARIANTS` in the spec file.
+to the `VARIANTS` array in the spec file.
 
-#### VCI Wallet
+#### VCI Wallet — ✅ Done
 
-| Variant | Change | Why |
-|---------|--------|-----|
-| `authorization_code` grant | `vci_grant_type: 'authorization_code'` | Most VCI deployments use auth-code flow. We only test pre-auth. |
-| `by_reference` offer | `vci_credential_offer_variant: 'by_reference'` | Credential offers via reference URL — common in cross-device flows. |
-| `deferred` issuance | `vci_credential_issuance_mode: 'deferred'` | Issuer returns a transaction_id; wallet polls. We support this already. |
+All P0 variants are now in `oid4vci-wallet.spec.ts`:
+`authorization_code`, `by_reference`, `deferred`, plus `mdoc`.
 
-#### VP Wallet
+#### VP Wallet — ✅ Done
 
-| Variant | Change | Why |
-|---------|--------|-----|
-| `direct_post.jwt` response | `response_mode: 'direct_post.jwt'` | Encrypted/signed VP response — required for HAIP. |
-| `haip` profile | `vp_profile: 'haip'` | EU ARF/HAIP compliance. Tests stricter requirements. |
-| `redirect_uri` client_id | `client_id_prefix: 'redirect_uri'` | Simplest trust model, no certificates needed. |
+All P0 variants are now in `oid4vp-wallet.spec.ts`:
+`direct_post.jwt`, `haip`, `redirect_uri`, plus `iso_mdl`.
+
+#### VCI Issuer — ✅ Done
+
+| Variant | Status |
+|---------|--------|
+| `authorization_code` grant | Added in `oid4vci-issuer.spec.ts` |
+
+#### VP Verifier — ✅ Done
+
+| Variant | Status |
+|---------|--------|
+| `direct_post.jwt` response | Added in `oid4vp-verifier.spec.ts` |
+| `redirect_uri` client_id | Added in `oid4vp-verifier.spec.ts` |
 
 ### P1 — Needs config or infrastructure changes
 
