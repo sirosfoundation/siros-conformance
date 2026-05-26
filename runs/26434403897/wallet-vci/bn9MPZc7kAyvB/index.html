@@ -1,0 +1,413 @@
+<!DOCTYPE html>
+<html lang="en" xmlns="http://www.w3.org/1999/xhtml">
+<head>
+    <meta charset="UTF-8">
+    <title>Plan details</title>
+    <meta http-equiv="Cache-control" content="no-cache, no-store, must-revalidate">
+    <meta http-equiv="Pragma" content="no-cache">
+
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, minimum-scale=1.0, user-scalable=no">
+    <meta charset="UTF-8">
+    <style>
+        html{
+            box-sizing: border-box;
+        }
+        body{
+            font-family:sans-serif;
+            line-height:1.5em;
+            padding-left:30px;
+            padding-right:30px;
+            padding-top:2em;
+        }
+
+        #header{
+        }
+
+        #header th{
+            text-align:left;
+            padding-right: 16px;
+        }
+
+        #results{
+        }
+
+        table{
+        }
+
+        .testStatus-created {
+            background-color: #fcd9f6;
+            color: black;
+        }
+
+        .testStatus-configured {
+            background-color: #d3fffe;
+            color: black;
+        }
+
+        .testStatus-running {
+            background-color: #6d09e8;
+            color: white;
+        }
+
+        .testStatus-waiting {
+            background-color: #6ac4c2;
+            color: black;
+        }
+
+        .testStatus-interrupted {
+            background-color: #b70018;
+            color: white;
+        }
+
+        .testStatus-finished {
+            background-color: #383647;
+            color: white;
+        }
+
+        .testStatus-unknown {
+            background-color: #dedada;
+            color: #6d6a6a;
+        }
+
+        .testResult-passed {
+            background-color: #40e809;
+            color: black;
+        }
+
+        .testResult-warning {
+            background-color: #d88602;
+            color: white;
+        }
+
+        .testResult-failed {
+            background-color: red;
+            color: white;
+        }
+
+        .testResult-review {
+            background-color: #6ac4c2;
+            color: black;
+        }
+
+        .testResult-skipped {
+            background-color: #d88602;
+            color: white;
+        }
+
+        .testResult-unknown {
+            background-color: #dedada;
+            color: #6d6a6a;
+        }
+        .result-success {
+            background-color: #00cc00;
+        }
+
+        .result-failure {
+            background-color: #cc0000;
+        }
+
+        .result-warning {
+            background-color: #d88602;
+        }
+
+        .result-review {
+            background-color: #00ccff;
+        }
+
+        .result-interrupted {
+            background-color: #ddbb88;
+        }
+
+        .result-finished {
+            background-color: #383647;
+        }
+
+        .result-info {
+            background-color: #e2bfce;
+        }
+
+        .result-skipped {
+            background-color: #d88602;
+        }
+
+        .result-default {
+            background-color: #00cc00;
+        }
+        .rounded-pill{
+            background-color: rgba(0.5, 0.5, 0.5, 0.5);
+            border-top-left-radius: 0.25em;
+            border-top-right-radius: 0.25em;
+            border-bottom-right-radius: 0.25em;
+            border-bottom-left-radius: 0.25em;
+            padding-left:0.4em;
+            padding-right:0.4em;
+            padding-top:0.1em;
+            padding-bottom:0.1em;
+            font-size:0.8em;
+        }
+        .badge{
+            border-bottom-left-radius: 3px;
+            border-bottom-right-radius: 3px;
+            border-top-left-radius: 3px;
+            border-top-right-radius: 3px;
+            box-sizing: border-box;
+            color: rgb(255, 255, 255);
+            display: inline;
+            font-size: 0.8em;
+            font-weight: 700;
+            line-height: 1.2em;
+            padding-bottom: 3.6px;
+            padding-left: 7.2px;
+            padding-right: 7.2px;
+            padding-top: 2.4px;
+            text-align: center;
+            vertical-align: baseline;
+            white-space: no-wrap;
+        }
+        .info{
+            background-color: rgb(226, 191, 206);
+        }
+        .success{
+            background-color: rgb(0, 204, 0);
+        }
+        .failure{
+            background-color: rgb(204, 0, 0);
+            color:#fff;
+        }
+        .interrupted{
+            background-color: rgb(221, 187, 136);
+            color:#fff;
+        }
+        .warning{
+            background-color: rgb(216, 134, 2);
+            color:#fff;
+        }
+        .failed{
+            background-color: rgb(0, 0, 0);
+            color:#fff;
+        }
+        .review{
+            background-color: rgb(0, 204, 255);
+            color:#fff;
+        }
+        .incoming{
+            background-color:rgb(91, 192, 222);
+        }
+        .outgoing{
+            background-color:rgb(91, 192, 222);
+        }
+        .finished{
+            background-color: rgb(56, 54, 71);
+            color:#fff;
+        }
+        .passed{
+            background-color: #40e809;
+            color: #000;
+        }
+        #tests-list{
+
+        }
+        #tests-list tr:hover{
+            background-color:#eee;
+        }
+        #tests-list th{
+            text-align:left;
+            background-color:#f2f2f2;
+            border:1px solid #eee;
+            border-collapse:collapse;
+            padding-left:0.2em;
+            padding-right:0.2em;
+            padding-top:0.2em;
+            padding-bottom:0.2em;
+        }
+        #tests-list td{
+            border:1px solid #eee;
+            border-collapse:collapse;
+            padding-left:0.3em;
+            padding-right:0.3em;
+            padding-top:0.3em;
+            padding-bottom:0.3em;
+        }
+        #moreinfomsg{
+            border:1px solid #eee;
+            padding-left:0.5em;
+            padding-right:0.5em;
+            padding-top:0.5em;
+            padding-bottom:0.5em;
+            margin-left:0.5em;
+            margin-right:0.5em;
+            margin-top:0.5em;
+            margin-bottom:0.5em;
+            background-color:#f3f3f3;
+        }
+    </style>
+<!-- siros:brand:head -->
+<style>
+    .siros-report-nav { background: #fff; border-bottom: 1px solid #e0e0e0; position: sticky; top: 0; z-index: 100; font-family: 'Helvetica Neue', Arial, system-ui, sans-serif; }
+    .siros-report-nav .sri { max-width: 1400px; margin: 0 auto; padding: 0.6rem 2rem; display: flex; align-items: center; }
+    .siros-report-nav .srb { display: flex; align-items: center; gap: 0.6rem; text-decoration: none; color: #1C4587; font-weight: 600; font-size: 1.1rem; }
+    .siros-report-nav .srb img { height: 40px; width: auto; }
+    .siros-report-nav .srl { margin-left: auto; display: flex; gap: 1.25rem; align-items: center; }
+    .siros-report-nav .srl a { color: #555; text-decoration: none; font-size: 0.875rem; font-weight: 500; transition: color 0.2s; }
+    .siros-report-nav .srl a:hover { color: #1C4587; }
+    .siros-report-nav .srl svg { width: 20px; height: 20px; fill: #555; transition: fill 0.2s; }
+    .siros-report-nav .srl a:hover svg { fill: #1C4587; }
+    .siros-report-container { max-width: 1400px; margin: 0 auto; padding: 1.5rem 2rem 3rem; }
+    .siros-report-container table { border-collapse: collapse; }
+    .siros-report-container table td, .siros-report-container table th { border: 1px solid #d0d7de; padding: 0.4rem 0.6rem; }
+    .siros-report-container #header th { background: #f6f8fa; }
+    body { padding: 0 !important; margin: 0 !important; }
+    .siros-report-footer { border-top: 1px solid #e0e0e0; margin-top: 3rem; padding: 2.5rem 0; font-size: 0.875rem; color: #555; font-family: 'Helvetica Neue', Arial, system-ui, sans-serif; }
+    .siros-report-footer .sfi { max-width: 1400px; margin: 0 auto; padding: 0 2rem; display: flex; align-items: flex-start; justify-content: space-between; gap: 2rem; }
+    .siros-report-footer .sfa { display: flex; flex-direction: column; gap: 0.25rem; }
+    .siros-report-footer .sfa a { color: #555; text-decoration: none; transition: color 0.2s; }
+    .siros-report-footer .sfa a:hover { color: #1C4587; }
+    .siros-report-footer address { font-style: normal; }
+    .siros-report-footer .sfo { font-weight: 600; color: #1a1a1a; margin: 0; }
+    .siros-report-footer .sfo a { color: inherit; text-decoration: none; }
+    .siros-report-footer .sfo a:hover { color: #1C4587; }
+    .siros-report-footer .sfn { display: flex; align-items: center; gap: 1.5rem; flex-wrap: wrap; padding-top: 0.5rem; }
+    .siros-report-footer .sfn a { color: #555; text-decoration: none; transition: color 0.2s; }
+    .siros-report-footer .sfn a:hover { color: #1C4587; }
+    .siros-report-footer .sfn svg { width: 20px; height: 20px; fill: #555; transition: fill 0.2s; }
+    .siros-report-footer .sfn a:hover svg { fill: #1C4587; }
+    .siros-report-footer .sbi { font-size: 0.75rem; color: #888; margin-top: 1rem; }
+    .siros-report-footer .sbi a { color: inherit; }
+    @media (max-width: 640px) { .siros-report-footer .sfi { flex-direction: column; gap: 1.5rem; } }
+  </style>
+<!-- /siros:brand:head -->
+</head>
+<body>
+<!-- siros:brand:body-start -->
+<nav class="siros-report-nav"><div class="sri"><a href="https://sirosfoundation.github.io/siros-conformance/" class="srb"><img src="https://sirosfoundation.github.io/siros-conformance/siros-logo.png" alt="SIROS Foundation"><span>Conformance</span></a><div class="srl"><a href="https://sirosfoundation.github.io/siros-conformance/runs/26434403897/">← Run #26434403897</a><a href="https://sirosfoundation.github.io/siros-conformance/">All Runs</a><a href="https://github.com/sirosfoundation/siros-conformance" aria-label="GitHub"><svg viewBox="0 0 24 24" width="20" height="20" fill="currentColor" aria-hidden="true"><path fill-rule="evenodd" clip-rule="evenodd" d="M12 .5C5.73.5.66 5.57.66 11.84c0 5.02 3.25 9.27 7.76 10.77.57.1.78-.25.78-.55 0-.27-.01-1-.02-1.96-3.16.69-3.83-1.52-3.83-1.52-.52-1.32-1.27-1.67-1.27-1.67-1.04-.71.08-.69.08-.69 1.15.08 1.76 1.18 1.76 1.18 1.02 1.76 2.69 1.25 3.34.96.1-.74.4-1.25.72-1.54-2.52-.29-5.18-1.26-5.18-5.6 0-1.24.44-2.25 1.17-3.04-.12-.29-.51-1.45.11-3.02 0 0 .96-.31 3.15 1.16.91-.25 1.89-.38 2.86-.38.97 0 1.95.13 2.86.38 2.18-1.47 3.14-1.16 3.14-1.16.62 1.57.23 2.73.11 3.02.73.79 1.17 1.8 1.17 3.04 0 4.35-2.67 5.31-5.21 5.59.41.35.78 1.05.78 2.12 0 1.53-.01 2.76-.01 3.14 0 .31.21.66.79.55 4.5-1.5 7.75-5.75 7.75-10.77C23.34 5.57 18.27.5 12 .5Z"/></svg></a></div></div></nav>
+<div class="siros-report-container">
+<!-- /siros:brand:body-start -->
+<h1>
+Test Plan Details
+</h1>
+<div id="header">
+    <table>
+        <tr>
+            <th>Plan Name</th>
+            <td>oid4vci-1_0-wallet-test-plan</td>
+        </tr>
+        <tr>
+            <th>Variant</th>
+            <td>sender_constrain=dpop, client_auth_type=private_key_jwt, credential_format=mdoc, vci_authorization_code_flow_variant=issuer_initiated, authorization_request_type=simple, vci_credential_issuance_mode=immediate, fapi_request_method=unsigned, vci_grant_type=pre_authorization_code, vci_credential_offer_variant=by_value, vci_credential_encryption=plain, fapi_profile=vci</td>
+        </tr>
+        <tr>
+            <th>Plan ID</th>
+            <td>
+                <span>bn9MPZc7kAyvB</span>
+                <a target="_blank" href="https://localhost.emobix.co.uk:8443/plan-detail.html?public=true&amp;plan=bn9MPZc7kAyvB">https://localhost.emobix.co.uk:8443/plan-detail.html?public=true&amp;plan=bn9MPZc7kAyvB</a>
+            </td>
+        </tr>
+        <tr>
+            <th>Description</th>
+            <td>OID4VCI wallet conformance test for SIROS wallet (mdoc format) [17784e7]</td>
+        </tr>
+        <span>
+        <tr>
+            <th>Certification Profile</th>
+            <td>[]</td>
+        </tr>
+        </span>
+        <tr>
+            <th>Version</th>
+            <td>5.1.44</td>
+        </tr>
+        <tr>
+            <th>Started</th>
+            <td>2026-05-26T06:12:39.779145111Z</td>
+        </tr>
+        <tr>
+            <th>Owner</th>
+            <td>developer https://developer.com</td>
+        </tr>
+        <tr>
+            <th>Exported From</th>
+            <td>https://localhost.emobix.co.uk:8443</td>
+        </tr>
+        <tr>
+            <th>Exported By</th>
+            <td>developer https://developer.com</td>
+        </tr>
+        <tr>
+            <th>Suite Version</th>
+            <td>5.1.44</td>
+        </tr>
+        <tr>
+            <th>Exported</th>
+            <td>2026-05-26 06:14:21 (UTC)</td>
+        </tr>
+    </table>
+</div>
+<div id="moreinfomsg">
+    These test results were generated by the OpenID Foundation conformance suite.
+    By themselves, they are not proof that a deployment is conformant nor that it
+    meets the requirements for certification. For a list of certified deployments,
+    see <a href="https://openid.net/certification/" target="_blank">https://openid.net/certification/</a>
+    - to be added to this list follow
+    the <a href="https://openid.net/certification/instructions/" target="_blank">certification instructions</a>.
+</div>
+
+<h1>Test Results</h1>
+<table cellspacing="0" cellpadding="1" id="tests-list">
+    <thead>
+        <tr>
+            <th>Status</th>
+            <th>Result</th>
+            <th>Test Name</th>
+            <th>Test Id</th>
+            <th>Test Version</th>
+        </tr>
+    </thead>
+    <tbody>
+        <tr>
+            <td>
+                <span class="label testStatus-finished">FINISHED</span>
+            </td>
+            <td>
+                <span class="label testResult-failed">FAILED</span>
+            </td>
+            <td>
+                <a href="test-log-oid4vci-1_0-wallet-test-credential-issuance-HJ1YudrzAdutyh4.html">oid4vci-1_0-wallet-test-credential-issuance</a>
+            </td>
+            <td>HJ1YudrzAdutyh4</td>
+            <td>5.1.44</td>
+        </tr>
+        <tr>
+            <td>
+                <span class="label testStatus-finished">FINISHED</span>
+            </td>
+            <td>
+                <span class="label testResult-failed">FAILED</span>
+            </td>
+            <td>
+                <a href="test-log-oid4vci-1_0-wallet-test-credential-issuance-notification-Li1FkyMS8bezrFH.html">oid4vci-1_0-wallet-test-credential-issuance-notification</a>
+            </td>
+            <td>Li1FkyMS8bezrFH</td>
+            <td>5.1.44</td>
+        </tr>
+        <tr>
+            <td>
+                <span class="label testStatus-finished">FINISHED</span>
+            </td>
+            <td>
+                <span class="label testResult-failed">FAILED</span>
+            </td>
+            <td>
+                <a href="test-log-oid4vci-1_0-wallet-happy-path-with-scopes-without-authorization-details-in-token-response-pvbTKlTbX4BupCR.html">oid4vci-1_0-wallet-happy-path-with-scopes-without-authorization-details-in-token-response</a>
+            </td>
+            <td>pvbTKlTbX4BupCR</td>
+            <td>5.1.44</td>
+        </tr>
+    </tbody>
+</table>
+<p> </p>
+<!-- siros:brand:body-end -->
+</div>
+<footer class="siros-report-footer"><div class="sfi"><div class="sfa"><p class="sfo"><a href="https://siros.org">SIROS Foundation</a></p><a href="mailto:info@siros.org">info@siros.org</a><address>Bredgränd 4<br>111 30 Stockholm<br>Sweden</address></div><nav class="sfn"><a href="https://siros.org">SIROS Foundation</a><a href="https://developers.siros.org">Developer Docs</a><a href="https://compliance.siros.org">Compliance</a><a href="https://trust.siros.org">Trust Lists</a><a href="https://www.certification.openid.net/">OpenID Conformance</a><a href="https://github.com/sirosfoundation" aria-label="SIROS Foundation on GitHub"><svg viewBox="0 0 24 24" width="20" height="20" fill="currentColor" aria-hidden="true"><path fill-rule="evenodd" clip-rule="evenodd" d="M12 .5C5.73.5.66 5.57.66 11.84c0 5.02 3.25 9.27 7.76 10.77.57.1.78-.25.78-.55 0-.27-.01-1-.02-1.96-3.16.69-3.83-1.52-3.83-1.52-.52-1.32-1.27-1.67-1.27-1.67-1.04-.71.08-.69.08-.69 1.15.08 1.76 1.18 1.76 1.18 1.02 1.76 2.69 1.25 3.34.96.1-.74.4-1.25.72-1.54-2.52-.29-5.18-1.26-5.18-5.6 0-1.24.44-2.25 1.17-3.04-.12-.29-.51-1.45.11-3.02 0 0 .96-.31 3.15 1.16.91-.25 1.89-.38 2.86-.38.97 0 1.95.13 2.86.38 2.18-1.47 3.14-1.16 3.14-1.16.62 1.57.23 2.73.11 3.02.73.79 1.17 1.8 1.17 3.04 0 4.35-2.67 5.31-5.21 5.59.41.35.78 1.05.78 2.12 0 1.53-.01 2.76-.01 3.14 0 .31.21.66.79.55 4.5-1.5 7.75-5.75 7.75-10.77C23.34 5.57 18.27.5 12 .5Z"/></svg></a></nav></div><div class="sfi"><p class="sbi">Generated by <a href="https://github.com/sirosfoundation/siros-conformance">siros-conformance</a></p></div></footer>
+<!-- /siros:brand:body-end -->
+</body>
+</html>
