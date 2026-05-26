@@ -156,8 +156,14 @@ function escapeRegExp(s) {
   return s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
 }
 
-function brandReportHtml(htmlFile, backUrl, runId) {
+function brandReportHtml(htmlFile, backUrl, runId, meta = {}) {
   let html = fs.readFileSync(htmlFile, 'utf-8');
+
+  // Replace default conformance suite owner/exported-by with actual actor
+  const actor = meta.actor || process.env.GITHUB_ACTOR || '';
+  if (actor) {
+    html = html.replace(/developer\s+https:\/\/developer\.com/g, actor);
+  }
 
   // Always strip existing branding first (idempotent re-application)
   if (html.includes(SIROS_BRAND_HEAD_START)) {
@@ -218,7 +224,7 @@ function brandReportHtml(htmlFile, backUrl, runId) {
 }
 
 // Brand all extracted report HTML files
-function brandExtractedReports(runDir, runId) {
+function brandExtractedReports(runDir, runId, meta = {}) {
   const backUrl = `${pagesBase}/runs/${runId}/`;
   function walkDir(dir) {
     for (const entry of fs.readdirSync(dir)) {
@@ -228,12 +234,12 @@ function brandExtractedReports(runDir, runId) {
         walkDir(full);
       } else if (entry.endsWith('.html') && entry !== 'index.html') {
         // Don't brand our own generated index.html
-        brandReportHtml(full, backUrl, runId);
+        brandReportHtml(full, backUrl, runId, meta);
       } else if (entry === 'index.html') {
         // Also brand the plan-detail index but only if it's a conformance suite page
         const content = fs.readFileSync(full, 'utf-8');
         if (content.includes('Plan details') || content.includes('plan-detail')) {
-          brandReportHtml(full, backUrl, runId);
+          brandReportHtml(full, backUrl, runId, meta);
         }
       }
     }
@@ -508,7 +514,8 @@ function escapeHtml(str) {
 }
 
 // Brand conformance suite report pages with SIROS navbar + back-links
-brandExtractedReports(runDir, runId);
+const brandMeta = summaries[0]?.metadata || {};
+brandExtractedReports(runDir, runId, brandMeta);
 
 fs.writeFileSync(path.join(runDir, 'index.html'), generateRunIndex(runId, summaries, runUrl));
 
@@ -532,6 +539,9 @@ function generateTopIndex(pagesDir, pagesBase) {
     const summaryData = [];
     let targetRepo = '';
     let targetPr = '';
+    let actor = '';
+    let ref = '';
+    let sha = '';
     const condTotals = {};
 
     for (const sf of summaryFiles) {
@@ -544,6 +554,9 @@ function generateTopIndex(pagesDir, pagesBase) {
         profiles.push(s.profile);
         if (s.metadata?.targetRepo) targetRepo = s.metadata.targetRepo;
         if (s.metadata?.targetPr) targetPr = s.metadata.targetPr;
+        if (s.metadata?.actor) actor = s.metadata.actor;
+        if (s.metadata?.ref) ref = s.metadata.ref;
+        if (s.metadata?.sha) sha = s.metadata.sha;
         // Aggregate conditions
         for (const m of (s.modules || [])) {
           if (!m.conditions) continue;
@@ -555,7 +568,7 @@ function generateTopIndex(pagesDir, pagesBase) {
       } catch {}
     }
 
-    runs.push({ id: entry, timestamp: timestamp || fs.statSync(entryPath).mtime.toISOString(), totalPassed, totalFailed, totalModules, profiles, targetRepo, targetPr, condTotals });
+    runs.push({ id: entry, timestamp: timestamp || fs.statSync(entryPath).mtime.toISOString(), totalPassed, totalFailed, totalModules, profiles, targetRepo, targetPr, actor, ref, sha, condTotals });
   }
 
   runs.sort((a, b) => b.timestamp.localeCompare(a.timestamp));
@@ -587,6 +600,14 @@ function generateTopIndex(pagesDir, pagesBase) {
     if (r.targetRepo) {
       const short = r.targetRepo.split('/').pop();
       target = r.targetPr ? `<a href="https://github.com/${escapeHtml(r.targetRepo)}/pull/${escapeHtml(r.targetPr)}">${escapeHtml(short)}#${escapeHtml(r.targetPr)}</a>` : escapeHtml(short);
+    } else if (r.ref || r.sha) {
+      // No external target — show the conformance repo ref/commit info
+      const branch = (r.ref || '').replace('refs/heads/', '');
+      const shortSha = (r.sha || '').slice(0, 7);
+      const parts = [];
+      if (branch) parts.push(escapeHtml(branch));
+      if (shortSha) parts.push(`<a href="https://github.com/${escapeHtml(repo)}/commit/${escapeHtml(r.sha)}">${shortSha}</a>`);
+      target = parts.join(' ');
     }
     html += `      <tr><td><a href="runs/${r.id}/">#${r.id}</a></td><td>${date}</td><td>${target}</td><td>${profileLabels}</td><td>${conditionBar(r.condTotals)}</td></tr>\n`;
   }
