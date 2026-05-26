@@ -107,17 +107,17 @@ images built from a PR branch.
 
 | Service name | Env var | Default image |
 |-------------|---------|---------------|
-| `vc-issuer` | `VC_ISSUER_IMAGE` | `ghcr.io/sirosfoundation/vc-issuer:latest` |
-| `vc-verifier` | `VC_VERIFIER_IMAGE` | `ghcr.io/sirosfoundation/vc-verifier:latest` |
-| `vc-apigw` | `VC_APIGW_IMAGE` | `ghcr.io/sirosfoundation/vc-apigw:latest` |
-| `vc-registry` | `VC_REGISTRY_IMAGE` | `ghcr.io/sirosfoundation/vc-registry:latest` |
-| `vc-mockas` | `VC_MOCKAS_IMAGE` | `ghcr.io/sirosfoundation/vc-mockas:latest` |
+| `vc-issuer` | `VC_ISSUER_IMAGE` | `ghcr.io/sirosfoundation/vc/issuer:latest` |
+| `vc-verifier` | `VC_VERIFIER_IMAGE` | `ghcr.io/sirosfoundation/vc/verifier:latest` |
+| `vc-apigw` | `VC_APIGW_IMAGE` | `ghcr.io/sirosfoundation/vc/apigw:latest` |
+| `vc-registry` | `VC_REGISTRY_IMAGE` | `ghcr.io/sirosfoundation/vc/registry:latest` |
+| `vc-mockas` | `VC_MOCKAS_IMAGE` | `ghcr.io/sirosfoundation/vc/mockas:latest` |
 | `go-trust` | `GO_TRUST_IMAGE` | `ghcr.io/sirosfoundation/go-trust:latest` |
 | `wallet-frontend` | `WALLET_FRONTEND_IMAGE` | `ghcr.io/sirosfoundation/wallet-frontend:latest` |
 | `go-wallet-backend` | `WALLET_BACKEND_IMAGE` | `ghcr.io/sirosfoundation/go-wallet-backend:latest` |
 
 ```bash
-VC_ISSUER_IMAGE=ghcr.io/sirosfoundation/vc-issuer:pr-42 make up-issuer
+VC_ISSUER_IMAGE=ghcr.io/sirosfoundation/vc/issuer:pr-42 make up-issuer
 ```
 
 Short tags (`pr-42`, `sha-abc123`) are expanded to the default registry

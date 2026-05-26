@@ -22,7 +22,7 @@
  *   full-url   → used as-is
  *
  * Output (to stdout):
- *   export VC_ISSUER_IMAGE=ghcr.io/sirosfoundation/vc-issuer:pr-42
+ *   export VC_ISSUER_IMAGE=ghcr.io/sirosfoundation/vc/issuer:pr-42
  *   export WALLET_FRONTEND_IMAGE=ghcr.io/sirosfoundation/wallet-frontend:sha-abc123
  *
  * Usage in CI:
@@ -36,11 +36,11 @@ import * as fs from 'fs';
 // ── Service → env var / default image mapping ──────────────────────────────
 
 const SERVICE_MAP = {
-  'vc-registry':       { env: 'VC_REGISTRY_IMAGE',       image: 'ghcr.io/sirosfoundation/vc-registry' },
-  'vc-issuer':         { env: 'VC_ISSUER_IMAGE',         image: 'ghcr.io/sirosfoundation/vc-issuer' },
-  'vc-verifier':       { env: 'VC_VERIFIER_IMAGE',       image: 'ghcr.io/sirosfoundation/vc-verifier' },
-  'vc-apigw':          { env: 'VC_APIGW_IMAGE',          image: 'ghcr.io/sirosfoundation/vc-apigw' },
-  'vc-mockas':         { env: 'VC_MOCKAS_IMAGE',          image: 'ghcr.io/sirosfoundation/vc-mockas' },
+  'vc-registry':       { env: 'VC_REGISTRY_IMAGE',       image: 'ghcr.io/sirosfoundation/vc/registry' },
+  'vc-issuer':         { env: 'VC_ISSUER_IMAGE',         image: 'ghcr.io/sirosfoundation/vc/issuer' },
+  'vc-verifier':       { env: 'VC_VERIFIER_IMAGE',       image: 'ghcr.io/sirosfoundation/vc/verifier' },
+  'vc-apigw':          { env: 'VC_APIGW_IMAGE',          image: 'ghcr.io/sirosfoundation/vc/apigw' },
+  'vc-mockas':         { env: 'VC_MOCKAS_IMAGE',          image: 'ghcr.io/sirosfoundation/vc/mockas' },
   'go-trust':          { env: 'GO_TRUST_IMAGE',          image: 'ghcr.io/sirosfoundation/go-trust' },
   'wallet-frontend':   { env: 'WALLET_FRONTEND_IMAGE',   image: 'ghcr.io/sirosfoundation/wallet-frontend' },
   'go-wallet-backend': { env: 'WALLET_BACKEND_IMAGE',    image: 'ghcr.io/sirosfoundation/go-wallet-backend' },
@@ -142,7 +142,7 @@ for (const [service, value] of Object.entries(overrides)) {
 
   let fullImage;
   if (value.includes('/')) {
-    // Full image reference (e.g. ghcr.io/sirosfoundation/vc-issuer:pr-42)
+    // Full image reference (e.g. ghcr.io/sirosfoundation/vc/issuer:pr-42)
     fullImage = value;
   } else {
     // Short tag (e.g. pr-42, sha-abc123, feature-branch)
