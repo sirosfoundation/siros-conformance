@@ -1,0 +1,23 @@
+# Android wallet overlay for conformance testing.
+#
+# Adjustments for running OID4VCI/VP conformance tests against the
+# sample-app on Waydroid instead of wallet-frontend.
+#
+# Usage:
+#   docker compose -f compose/wallet.yml -f compose/go-trust.yml \
+#     -f compose/vc-services.yml -f compose/conformance-suite.yml \
+#     -f compose/android-wallet.yml up -d
+#
+# The wallet-backend already uses network_mode: host and is reachable
+# from Waydroid at the host gateway IP (typically 192.168.240.1).
+# The conformance suite runs on localhost:8443 (via nginx proxy),
+# also reachable from Waydroid at the same gateway IP.
+
+services:
+  wallet-backend:
+    environment:
+      # Accept cleartext HTTP from the Android app
+      - WALLET_HTTP_CLIENT_ALLOW_HTTP=true
+      # The Android app uses its own redirect scheme (siros-sample://callback)
+      # so we need to allow it
+      - WALLET_SERVER_RP_ORIGIN=http://localhost:3000,http://${WAYDROID_GATEWAY:-192.168.240.1}:3000

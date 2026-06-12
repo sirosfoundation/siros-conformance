@@ -1,10 +1,13 @@
-.PHONY: install up-issuer up-verifier up-wallet down test-issuer test-verifier test-wallet test-wallet-vci test-wallet-vp
+.PHONY: install up-issuer up-verifier up-wallet up-android down test-issuer test-verifier \
+	test-wallet test-wallet-vci test-wallet-vp \
+	test-android test-android-vci test-android-vp
 
 COMPOSE := docker compose
 CONFORMANCE := -f compose/conformance-suite.yml
 VC_SERVICES := -f compose/vc-services.yml
 GO_TRUST := -f compose/go-trust.yml
 WALLET := -f compose/wallet.yml
+ANDROID := -f compose/android-wallet.yml
 
 # ── Install ──────────────────────────────────────────────────────────────────
 install:
@@ -42,7 +45,20 @@ test-wallet-vp:
 
 test-wallet: test-wallet-vci test-wallet-vp
 
+# ── Android wallet tests (via ADB / Waydroid) ───────────────────────────────
+up-android:
+	$(COMPOSE) $(WALLET) $(GO_TRUST) $(VC_SERVICES) $(CONFORMANCE) $(ANDROID) up -d
+
+test-android-vci:
+	NODE_TLS_REJECT_UNAUTHORIZED=0 ADB_WALLET=1 npx playwright test specs/conformance/oid4vci-android-wallet.spec.ts
+
+test-android-vp:
+	NODE_TLS_REJECT_UNAUTHORIZED=0 ADB_WALLET=1 npx playwright test specs/conformance/oid4vp-android-wallet.spec.ts
+
+test-android: test-android-vci test-android-vp
+
 # ── Full cycle ──────────────────────────────────────────────────────────────
 ci-issuer: up-issuer test-issuer
 ci-verifier: up-verifier test-verifier
 ci-wallet: up-wallet test-wallet
+ci-android: up-android test-android
