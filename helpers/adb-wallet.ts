@@ -97,11 +97,11 @@ export class AdbWalletHelper {
    * @param offerUrl Full `openid-credential-offer://...` URL
    */
   async sendCredentialOffer(offerUrl: string): Promise<void> {
+    // Pass as a single shell string so the URI is properly quoted
+    // (adb shell concatenates args and interprets special chars like ? and %)
+    const escaped = offerUrl.replace(/'/g, "'\\''");
     await this.adb(
-      'shell', 'am', 'start',
-      '-a', 'android.intent.action.VIEW',
-      '-d', offerUrl,
-      '-n', ACTIVITY,
+      'shell', `am start -a android.intent.action.VIEW -d '${escaped}' -n ${ACTIVITY}`,
     );
   }
 
@@ -111,11 +111,9 @@ export class AdbWalletHelper {
    * @param vpUrl Full `openid4vp://...` URL
    */
   async sendPresentationRequest(vpUrl: string): Promise<void> {
+    const escaped = vpUrl.replace(/'/g, "'\\''");
     await this.adb(
-      'shell', 'am', 'start',
-      '-a', 'android.intent.action.VIEW',
-      '-d', vpUrl,
-      '-n', ACTIVITY,
+      'shell', `am start -a android.intent.action.VIEW -d '${escaped}' -n ${ACTIVITY}`,
     );
   }
 
@@ -168,12 +166,17 @@ export class AdbWalletHelper {
 
     while (Date.now() < deadline) {
       try {
+        // Don't use logcat -s (exact tag match) because Timber generates
+        // subtags like "SirosWallet$connectEngine" that won't match "SirosWallet:*".
+        // Instead, dump recent lines and filter in JS.
         const output = await this.adb(
-          'logcat', '-d', '-t', '50',
-          '-s', 'SIROS_VM:*', 'SirosSDK:*',
+          'logcat', '-d', '-t', '100',
         );
 
         for (const line of output.split('\n')) {
+          // Only consider lines from our tags (including Timber subtags like SirosWallet$xxx)
+          if (!/SIROS_VM|SIROS_MAIN|SirosWallet|SirosSDK/.test(line)) continue;
+
           for (const pattern of successPatterns) {
             if (pattern.test(line)) {
               return { success: true, message: line.trim() };

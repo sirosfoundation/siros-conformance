@@ -15,6 +15,8 @@
 
 services:
   wallet-backend:
+    extra_hosts:
+      - "localhost.emobix.co.uk:host-gateway"
     environment:
       # Accept cleartext HTTP from the Android app
       - WALLET_HTTP_CLIENT_ALLOW_HTTP=true

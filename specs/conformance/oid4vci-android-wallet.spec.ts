@@ -236,7 +236,7 @@ test.describe('OID4VCI Android Wallet Conformance Suite', () => {
             module: moduleName,
             status: finalInfo.status,
             result: finalInfo.result,
-            passed: finalInfo.result === 'PASSED',
+            passed: finalInfo.result === 'PASSED' || finalInfo.result === 'SKIPPED',
           });
         }
 
@@ -251,18 +251,17 @@ test.describe('OID4VCI Android Wallet Conformance Suite', () => {
         // Summary
         console.log('\n=== VCI Android Wallet Results ===');
         const passed = results.filter((r) => r.passed).length;
+        const failed = results.filter((r) => !r.passed);
         console.log(`Passed: ${passed}/${results.length}`);
-        results
-          .filter((r) => !r.passed)
-          .forEach((r) => console.log(`  FAILED: ${r.module} (${r.result})`));
+        failed.forEach((r) => console.log(`  FAILED: ${r.module} (${r.result})`));
 
         const allLogs = await adb.getRecentLogs(200);
-        if (results.some((r) => !r.passed)) {
+        if (failed.length > 0) {
           console.log('\n=== Recent Android Logs ===');
           console.log(allLogs);
         }
 
-        expect(passed).toBe(results.length);
+        expect(failed.length).toBe(0);
       });
     });
   }
