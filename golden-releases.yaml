@@ -12,6 +12,18 @@
 default: beta_r2
 
 releases:
+  beta_r3:
+    description: "R3 (BETA) milestone baseline"
+    date: "2026-06-22"
+    images:
+      wallet-frontend:   0.5.0-1-sirosid.7
+      go-wallet-backend: 0.6.1
+      go-trust:          0.6.0
+      vc-issuer:         v0.6.5-sirosid.3
+      vc-verifier:       v0.6.5-sirosid.3
+      vc-apigw:          v0.6.5-sirosid.3
+      vc-registry:       v0.6.5-sirosid.3
+      vc-mockas:         v0.6.5-sirosid.3
   beta_r2:
     description: "R2 (BETA) milestone baseline"
     date: "2026-05-24"
