@@ -165,6 +165,7 @@ For the full CI documentation — including `@conformance` PR comment syntax,
 image overrides, and cross-repo triggers — see the
 [Running Conformance Tests](https://sirosfoundation.github.io/docs/howto/running-conformance-tests) guide.
 
+[![OpenSSF Scorecard](https://api.scorecard.dev/projects/github.com/sirosfoundation/siros-conformance/badge)](https://scorecard.dev/viewer/?uri=github.com/sirosfoundation/siros-conformance)
 ## License
 
 BSD 2-Clause — see [LICENSE](LICENSE).
