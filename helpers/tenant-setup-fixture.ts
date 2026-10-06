@@ -15,7 +15,6 @@ export interface TenantContext {
   tenantId: string;
   username: string;
   userId?: string;
-  appToken?: string;
   ready: boolean;
   error?: string;
   credentials?: any[];
@@ -53,7 +52,6 @@ export const test = base.extend<{}, { tenantContext: TenantContext }>({
       }
 
       ctx.userId = regResult.userId;
-      ctx.appToken = regResult.appToken;
       ctx.ready = true;
       ctx.credentials = await webauthn.getCredentials();
       console.log(`[TenantFixture] Registered user: ${ctx.username} (${ctx.userId}) in tenant ${ctx.tenantId}`);
