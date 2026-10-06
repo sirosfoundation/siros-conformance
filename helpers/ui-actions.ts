@@ -54,7 +54,9 @@ async function describeAuthFailure(
 ): Promise<string> {
   try {
     const data = await response.json();
-    const msg = data.error || data.message;
+    const msg = [data.error, data.message]
+      .filter((m, i, a) => typeof m === 'string' && m && a.indexOf(m) === i)
+      .join(': ');
     if (msg) {
       return response.status() === 410
         ? `HTTP 410 ${msg} (backend has removed the legacy HMAC AS; the wallet frontend must use X-Token-Mode: session)`
