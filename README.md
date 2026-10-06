@@ -48,6 +48,24 @@ make down
 | `verifier` | vc-verifier, vc-registry, mongodb, go-trust-allow, conformance suite |
 | `wallet` | wallet-frontend, go-wallet-backend (with registry), go-trust-allow, vc-*, conformance suite |
 
+## Wallet authentication (session mode)
+
+The wallet harness registers and logs in through the UI and follows the
+go-wallet-backend AS contract: `/auth/passkey/{register,login}/{begin,finish}`
+with `X-Token-Mode: session` (session cookie, no token in the body) and a
+short-lived ES256 bearer from `POST /auth/token` (`requestAccessToken()` in
+`helpers/ui-actions.ts`). The legacy `/user/*-webauthn-*` URLs are still
+recognised so golden releases pinned to older backends keep working; a backend
+that has removed the legacy AS answers an old frontend with HTTP 410
+`legacy_tokens_disabled`, which the helpers report verbatim.
+
+A fast check of this flow, needing only the wallet stack:
+
+```bash
+make up-wallet
+npm run test:auth-smoke
+```
+
 ## Filtering by variant
 
 Each test plan runs multiple **variants** — combinations of credential format,
