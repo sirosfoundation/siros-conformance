@@ -218,7 +218,7 @@ export async function loginUserViaUI(
       try {
         finishResponse = await response.json();
       } catch { /* */ }
-      if (finishStatus === 410) {
+      if (finishStatus !== 200 && finishStatus !== 409) {
         apiError = await describeAuthFailure(response, 'Finish failed');
       }
     } else if (isAuthEndpoint(url, 'login', 'begin') && !response.ok()) {
