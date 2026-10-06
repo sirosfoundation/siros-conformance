@@ -58,9 +58,12 @@ async function describeAuthFailure(
       .filter((m, i, a) => typeof m === 'string' && m && a.indexOf(m) === i)
       .join(': ');
     if (msg) {
-      return response.status() === 410
-        ? `HTTP 410 ${msg} (backend has removed the legacy HMAC AS; the wallet frontend must use X-Token-Mode: session)`
-        : msg;
+      if (response.status() === 410) {
+        return data.error === 'legacy_tokens_disabled'
+          ? `HTTP 410 ${msg} (backend has removed the legacy HMAC AS; the wallet frontend must use X-Token-Mode: session)`
+          : `HTTP 410 ${msg}`;
+      }
+      return msg;
     }
   } catch { /* not JSON */ }
   return `${fallback}: HTTP ${response.status()}`;
