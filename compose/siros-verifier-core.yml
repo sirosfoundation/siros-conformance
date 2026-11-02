@@ -1,0 +1,67 @@
+# siros-verifier-core and its shared flow store for OpenID4VP verifier conformance.
+services:
+  mongodb:
+    image: mongo:7.0
+    container_name: core-conformance-mongodb
+    volumes:
+      - core-mongodb-data:/data/db
+    healthcheck:
+      test: ["CMD", "mongosh", "--eval", "db.adminCommand('ping')"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+    networks:
+      - conformance-network
+
+  siros-verifier-core:
+    image: ${SIROS_VERIFIER_CORE_IMAGE:-siros-verifier-core:local}
+    container_name: siros-verifier-core
+    ports:
+      - "9006:9001"
+    volumes:
+      - ../fixtures/siros-verifier-core/proxy.toml:/etc/siros-verifier/proxy.toml:ro
+      - ../fixtures/siros-verifier-core/attributes.toml:/etc/siros-verifier/attributes.toml:ro
+      - ../fixtures/siros-verifier-core/signing_ec_leaf.pem:/etc/siros-verifier/signing_ec_leaf.pem:ro
+      - ../fixtures/siros-verifier-core/bundle.crt:/etc/siros-verifier/conformanceCA.crt:ro
+      - ../fixtures/vc-pki:/pki:ro
+    environment:
+      - TUNNELBANA_BIND=0.0.0.0:9001
+      - SSL_CERT_FILE=/etc/siros-verifier/conformanceCA.crt
+    depends_on:
+      mongodb:
+        condition: service_healthy
+      go-trust-allow:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "curl", "-sf", "http://localhost:9001/health"]
+      interval: 5s
+      timeout: 5s
+      retries: 20
+      start_period: 10s
+    networks:
+      - conformance-network
+
+  siros-verifier-core-nginx:
+    image: nginx:1.29-alpine
+    container_name: siros-verifier-core-nginx
+    ports:
+      - "9443:9443"
+    volumes:
+      - ../fixtures/siros-verifier-core/nginx.conf:/etc/nginx/nginx.conf:ro
+      - ../fixtures/siros-verifier-core/tls.crt:/etc/nginx/tls.crt:ro
+      - ../fixtures/siros-verifier-core/tls.key:/etc/nginx/tls.key:ro
+      - ../fixtures/siros-verifier-core/signing_ec_leaf.pem:/etc/siros-verifier/signing_ec_leaf.pem:ro
+    depends_on:
+      siros-verifier-core:
+        condition: service_healthy
+    networks:
+      conformance-network:
+        aliases:
+          - conformance.example.com
+
+volumes:
+  core-mongodb-data:
+
+networks:
+  conformance-network:
+    driver: bridge

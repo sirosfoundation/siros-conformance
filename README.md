@@ -32,6 +32,11 @@ make test-issuer
 make up-verifier
 make test-verifier
 
+# siros-verifier-core conformance (build its image first)
+docker build --network=host -t siros-verifier-core:local ../siros-verifier-core
+make up-verifier-core
+make test-verifier-core
+
 # Wallet conformance (VCI + VP)
 make up-wallet
 make test-wallet
@@ -47,24 +52,6 @@ make down
 | `issuer` | vc-issuer, vc-apigw, vc-mockas, vc-registry, mongodb, go-trust-allow, conformance suite |
 | `verifier` | vc-verifier, vc-registry, mongodb, go-trust-allow, conformance suite |
 | `wallet` | wallet-frontend, go-wallet-backend (with registry), go-trust-allow, vc-*, conformance suite |
-
-## Wallet authentication (session mode)
-
-The wallet harness registers and logs in through the UI and follows the
-go-wallet-backend AS contract: `/auth/passkey/{register,login}/{begin,finish}`
-with `X-Token-Mode: session` (session cookie, no token in the body) and a
-short-lived ES256 bearer from `POST /auth/token` (`requestAccessToken()` in
-`helpers/ui-actions.ts`). The legacy `/user/*-webauthn-*` URLs are still
-recognised so golden releases pinned to older backends keep working; a backend
-that has removed the legacy AS answers an old frontend with HTTP 410
-`legacy_tokens_disabled`, which the helpers report verbatim.
-
-A fast check of this flow, needing only the wallet stack:
-
-```bash
-make up-wallet
-npm run test:auth-smoke
-```
 
 ## Filtering by variant
 
@@ -118,6 +105,12 @@ npx playwright test specs/conformance/oid4vci-wallet.spec.ts --grep "mdoc.*defer
 
 **Verifier** (`oid4vp-verifier.spec.ts`): 1 variant — `sd_jwt_vc/x509_san_dns/direct_post/request_uri_signed`
 
+**siros-verifier-core** (same spec with `VERIFIER_IMPL=core`): starts with
+`sd_jwt_vc/x509_hash/direct_post.jwt/request_uri_signed/plain_vp` and uses the core's
+`/ui/start/qr` and `/OIDC/.well-known/openid-configuration` routes. Override
+`SIROS_VERIFIER_CORE_IMAGE` to test another core image. See the
+[core setup guide](docs/verifier-core.md).
+
 ## Image overrides
 
 All Docker images default to `:latest` but can be overridden to test
@@ -127,6 +120,7 @@ images built from a PR branch.
 |-------------|---------|---------------|
 | `vc-issuer` | `VC_ISSUER_IMAGE` | `ghcr.io/sirosfoundation/vc/issuer:latest` |
 | `vc-verifier` | `VC_VERIFIER_IMAGE` | `ghcr.io/sirosfoundation/vc/verifier:latest` |
+| `siros-verifier-core` | `SIROS_VERIFIER_CORE_IMAGE` | `siros-verifier-core:local` |
 | `vc-apigw` | `VC_APIGW_IMAGE` | `ghcr.io/sirosfoundation/vc/apigw:latest` |
 | `vc-registry` | `VC_REGISTRY_IMAGE` | `ghcr.io/sirosfoundation/vc/registry:latest` |
 | `vc-mockas` | `VC_MOCKAS_IMAGE` | `ghcr.io/sirosfoundation/vc/mockas:latest` |
@@ -183,7 +177,6 @@ For the full CI documentation — including `@conformance` PR comment syntax,
 image overrides, and cross-repo triggers — see the
 [Running Conformance Tests](https://sirosfoundation.github.io/docs/howto/running-conformance-tests) guide.
 
-[![OpenSSF Scorecard](https://api.scorecard.dev/projects/github.com/sirosfoundation/siros-conformance/badge)](https://scorecard.dev/viewer/?uri=github.com/sirosfoundation/siros-conformance)
 ## License
 
 BSD 2-Clause — see [LICENSE](LICENSE).

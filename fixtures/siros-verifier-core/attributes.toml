@@ -1,0 +1,7 @@
+user_id_from_attrs = ["subject-id"]
+
+[attributes.givenname]
+openid = ["given_name"]
+
+[attributes.subject-id]
+openid = ["sub"]

@@ -1,4 +1,4 @@
-.PHONY: install up-issuer up-verifier up-wallet up-android down test-issuer test-verifier \
+.PHONY: install up-issuer up-verifier up-verifier-core up-wallet up-android down test-issuer test-verifier test-verifier-core \
 	test-wallet test-wallet-vci test-wallet-vp \
 	test-android test-android-vci test-android-vp
 
@@ -8,6 +8,7 @@ VC_SERVICES := -f compose/vc-services.yml
 GO_TRUST := -f compose/go-trust.yml
 WALLET := -f compose/wallet.yml
 ANDROID := -f compose/android-wallet.yml
+CORE := -f compose/siros-verifier-core.yml
 
 # ── Install ──────────────────────────────────────────────────────────────────
 install:
@@ -21,14 +22,17 @@ up-issuer:
 up-verifier:
 	$(COMPOSE) $(VC_SERVICES) $(GO_TRUST) $(CONFORMANCE) up -d
 
+up-verifier-core:
+	$(COMPOSE) $(CORE) $(GO_TRUST) $(CONFORMANCE) up -d
+
 up-wallet:
 	$(COMPOSE) $(WALLET) $(GO_TRUST) $(VC_SERVICES) $(CONFORMANCE) up -d
 
 down:
-	$(COMPOSE) $(WALLET) $(VC_SERVICES) $(GO_TRUST) $(CONFORMANCE) down -v 2>/dev/null; true
+	$(COMPOSE) $(WALLET) $(VC_SERVICES) $(CORE) $(GO_TRUST) $(CONFORMANCE) down -v 2>/dev/null; true
 
 pull:
-	$(COMPOSE) $(WALLET) $(VC_SERVICES) $(GO_TRUST) $(CONFORMANCE) pull
+	$(COMPOSE) $(WALLET) $(VC_SERVICES) $(CORE) $(GO_TRUST) $(CONFORMANCE) pull
 
 # ── Tests ────────────────────────────────────────────────────────────────────
 test-issuer:
@@ -36,6 +40,9 @@ test-issuer:
 
 test-verifier:
 	NODE_TLS_REJECT_UNAUTHORIZED=0 npx playwright test specs/conformance/oid4vp-verifier.spec.ts
+
+test-verifier-core:
+	VERIFIER_IMPL=core NODE_TLS_REJECT_UNAUTHORIZED=0 npx playwright test specs/conformance/oid4vp-verifier.spec.ts
 
 test-wallet-vci:
 	NODE_TLS_REJECT_UNAUTHORIZED=0 npx playwright test specs/conformance/oid4vci-wallet.spec.ts
@@ -60,5 +67,6 @@ test-android: test-android-vci test-android-vp
 # ── Full cycle ──────────────────────────────────────────────────────────────
 ci-issuer: up-issuer test-issuer
 ci-verifier: up-verifier test-verifier
+ci-verifier-core: up-verifier-core test-verifier-core
 ci-wallet: up-wallet test-wallet
 ci-android: up-android test-android
