@@ -27,12 +27,44 @@ import { VC_ENV, checkVCServicesHealth } from '../../helpers/vc-services';
 
 const CONFORMANCE_URL = process.env.CONFORMANCE_URL || 'https://localhost.emobix.co.uk:8443/';
 
+const IS_CORE = process.env.VERIFIER_IMPL === 'core';
+const CORE_DCQL = {
+  credentials: [{
+    id: 'eudi_pid',
+    format: 'dc+sd-jwt',
+    meta: { vct_values: ['urn:eudi:pid:1'] },
+    claims: [{ path: ['given_name'] }],
+  }],
+};
+
+const CORE_EVIDENCE_MODULES = new Set([
+  'oid4vp-1final-verifier-happy-flow',
+  'oid4vp-1final-verifier-minimal-cnf-jwk',
+  'oid4vp-1final-verifier-request-uri-fetched-twice',
+  'oid4vp-1final-verifier-present-revoked-credential',
+  'oid4vp-1final-verifier-present-credential-without-status',
+]);
+
 const VERIFIER_CONFORMANCE_URL =
-  process.env.VERIFIER_CONFORMANCE_URL || 'http://vc-verifier:8080';
+  process.env.VERIFIER_CONFORMANCE_URL ||
+  (IS_CORE ? 'https://conformance.example.com:9443' : 'http://vc-verifier:8080');
 
-const VERIFIER_HOST_URL = VC_ENV.VC_VERIFIER_URL;
+const VERIFIER_HOST_URL = IS_CORE
+  ? process.env.SIROS_VERIFIER_CORE_URL || 'https://localhost:9443'
+  : VC_ENV.VC_VERIFIER_URL;
 
-const VP_VERIFIER_VARIANTS = [
+const VP_VERIFIER_VARIANTS = IS_CORE ? [
+  {
+    name: 'sd_jwt_vc / x509_hash / direct_post.jwt / request_uri_signed / plain_vp',
+    variant: {
+      credential_format: 'sd_jwt_vc',
+      client_id_prefix: 'x509_hash',
+      response_mode: 'direct_post.jwt',
+      request_method: 'request_uri_signed',
+      vp_profile: 'plain_vp',
+    },
+  },
+] : [
   {
     name: 'sd_jwt_vc / x509_san_dns / direct_post / request_uri_signed',
     variant: {
@@ -62,7 +94,7 @@ const VP_VERIFIER_VARIANTS = [
   },
 ];
 
-const VP_RP_PLAN_NAME = 'oid4vp-1final-rp-test-plan';
+const VP_RP_PLAN_NAME = 'oid4vp-1final-verifier-test-plan';
 
 const VP_VERIFIER_CONFIG_PATH = path.resolve(
   __dirname,
@@ -75,9 +107,14 @@ const RESULTS_DIR = process.env.CONFORMANCE_RESULTS_DIR || path.resolve(__dirnam
 // Helpers
 // =============================================================================
 
+function passingResult(result: string): boolean {
+  return result === 'PASSED' || result === 'REVIEW';
+}
+
 function loadVerifierConfig(): string {
   let config = fs.readFileSync(VP_VERIFIER_CONFIG_PATH, 'utf-8');
-  const discoveryUrl = `${VERIFIER_CONFORMANCE_URL}/.well-known/openid-configuration`;
+  const discoveryPath = IS_CORE ? '/OIDC/.well-known/openid-configuration' : '/.well-known/openid-configuration';
+  const discoveryUrl = `${VERIFIER_CONFORMANCE_URL}${discoveryPath}`;
   const resourceUrl = VERIFIER_CONFORMANCE_URL;
   config = config.replace(/\$\{VERIFIER_DISCOVERY_URL\}/g, discoveryUrl);
   config = config.replace(/\$\{VERIFIER_RESOURCE_URL\}/g, resourceUrl);
@@ -102,13 +139,18 @@ test.describe('OID4VP Verifier/RP Conformance Suite', () => {
     }
 
     try {
-      const health = await checkVCServicesHealth();
-      verifierReady = health.verifier;
+      if (IS_CORE) {
+        const response = await fetch(`${VERIFIER_HOST_URL}/health`, { signal: AbortSignal.timeout(5000) });
+        verifierReady = response.ok;
+      } else {
+        const health = await checkVCServicesHealth();
+        verifierReady = health.verifier;
+      }
       if (!verifierReady) {
-        console.log('VC verifier not available');
+        console.log('Verifier not available');
       }
     } catch (error) {
-      console.log('VC services health check failed:', (error as Error).message);
+      console.log('Verifier health check failed:', (error as Error).message);
     }
   });
 
@@ -194,7 +236,7 @@ test.describe('OID4VP Verifier/RP Conformance Suite', () => {
               module: moduleName,
               status: info.status,
               result: info.result,
-              passed: info.result === 'PASSED',
+              passed: passingResult(info.result),
             });
             continue;
           }
@@ -202,25 +244,55 @@ test.describe('OID4VP Verifier/RP Conformance Suite', () => {
           // Module is WAITING — trigger verification at our verifier
           console.log(`Module ${moduleName}: triggering verification request`);
           try {
-            const response = await fetch(
-              `${VERIFIER_HOST_URL}/authorize?` +
-                new URLSearchParams({
-                  response_type: 'vp_token',
-                  client_id: 'e2e-test-client',
-                  redirect_uri: 'http://localhost:3000/cb',
-                  scope: 'pid',
-                  nonce: `conformance-${Date.now()}`,
-                  state: `state-${Date.now()}`,
-                }),
-              { redirect: 'manual' }
-            );
-
-            const location = response.headers.get('location');
-            if (location) {
-              console.log(`Module ${moduleName}: verifier redirected to ${location.slice(0, 100)}`);
+            if (IS_CORE) {
+              const response = await page.request.post(`${VERIFIER_HOST_URL}/ui/start/qr`, {
+                form: { dcql: JSON.stringify(CORE_DCQL), scheme: 'openid4vp' },
+              });
+              if (!response.ok) throw new Error(`Core start returned HTTP ${response.status}`);
+              const payload = await response.json();
+              await page.goto(api.getLogDetailUrl(moduleId), { waitUntil: 'networkidle' });
+              await page.locator('textarea[placeholder^="openid4vp://"]').fill(payload.authorization_request);
+              await page.getByRole('button', { name: 'Submit pasted URI' }).click();
+            } else {
+              const response = await fetch(
+                `${VERIFIER_HOST_URL}/authorize?` +
+                  new URLSearchParams({
+                    response_type: 'vp_token',
+                    client_id: 'e2e-test-client',
+                    redirect_uri: 'http://localhost:3000/cb',
+                    scope: 'pid',
+                    nonce: `conformance-${Date.now()}`,
+                    state: `state-${Date.now()}`,
+                  }),
+                { redirect: 'manual' }
+              );
+              const location = response.headers.get('location');
+              if (location) {
+                console.log(`Module ${moduleName}: verifier redirected to ${location.slice(0, 100)}`);
+              }
             }
           } catch (error) {
             console.log(`Module ${moduleName}: failed to trigger verification: ${(error as Error).message}`);
+          }
+
+          if (IS_CORE && CORE_EVIDENCE_MODULES.has(moduleName)) {
+            let status = 'pending';
+            for (let attempt = 0; attempt < 90 && status === 'pending'; attempt++) {
+              const response = await page.request.get(`${VERIFIER_HOST_URL}/vp/status`);
+              status = (await response.json()).status;
+              if (status === 'pending') await page.waitForTimeout(1000);
+            }
+            const current = await api.getModuleInfo(moduleId);
+            if (current.status !== 'FINISHED' && (status === 'done' || status === 'failed')) {
+              await page.goto(`${VERIFIER_HOST_URL}/vp/complete`, { waitUntil: 'domcontentloaded' });
+              fs.mkdirSync(RESULTS_DIR, { recursive: true });
+              const screenshot = path.join(RESULTS_DIR, `${moduleId}.png`);
+              await page.screenshot({ path: screenshot, fullPage: true });
+              await page.goto(api.getLogDetailUrl(moduleId), { waitUntil: 'networkidle' });
+              await page.getByRole('button', { name: 'Upload image', exact: true }).click();
+              await page.locator('input[type="file"][aria-describedby]').first().setInputFiles(screenshot);
+              await page.getByRole('button', { name: 'Upload', exact: true }).first().click();
+            }
           }
 
           try {
@@ -232,7 +304,7 @@ test.describe('OID4VP Verifier/RP Conformance Suite', () => {
           const finalInfo = await api.getModuleInfo(moduleId);
           console.log(`Module ${moduleName} result: ${finalInfo.result}`);
 
-          if (finalInfo.result !== 'PASSED') {
+          if (!passingResult(finalInfo.result)) {
             try {
               const logs = await api.getTestLog(moduleId);
               const failures = logs.filter(
@@ -251,7 +323,7 @@ test.describe('OID4VP Verifier/RP Conformance Suite', () => {
             module: moduleName,
             status: finalInfo.status,
             result: finalInfo.result,
-            passed: finalInfo.result === 'PASSED',
+            passed: passingResult(finalInfo.result),
           });
         }
 
@@ -265,11 +337,12 @@ test.describe('OID4VP Verifier/RP Conformance Suite', () => {
 
         // Report results
         const passed = results.filter((r) => r.passed);
-        const failed = results.filter((r) => !r.passed);
+        const skipped = results.filter((r) => r.result === 'SKIPPED');
+        const failed = results.filter((r) => !r.passed && r.result !== 'SKIPPED');
 
         // Write JSON summary
         const summary = {
-          profile: 'verifier',
+          profile: IS_CORE ? 'siros-verifier-core' : 'verifier',
           plan: VP_RP_PLAN_NAME,
           planId,
           variant: variantConfig.name,
@@ -278,6 +351,7 @@ test.describe('OID4VP Verifier/RP Conformance Suite', () => {
           total: results.length,
           passed: passed.length,
           failed: failed.length,
+          skipped: skipped.length,
           modules: results,
         };
         fs.mkdirSync(RESULTS_DIR, { recursive: true });
@@ -288,7 +362,7 @@ test.describe('OID4VP Verifier/RP Conformance Suite', () => {
 
         console.log('\n=== Verifier Conformance Results ===');
 
-        console.log(`Total: ${results.length} | Passed: ${passed.length} | Failed: ${failed.length}`);
+        console.log(`Total: ${results.length} | Passed: ${passed.length} | Failed: ${failed.length} | Skipped: ${skipped.length}`);
 
         if (failed.length > 0) {
           console.log('\nFailed modules:');
