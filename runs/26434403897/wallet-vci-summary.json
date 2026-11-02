@@ -1,0 +1,79 @@
+{
+  "profile": "wallet-vci",
+  "plan": "oid4vci-1_0-wallet-test-plan",
+  "planId": "bn9MPZc7kAyvB",
+  "variant": "mdoc / pre-authorized_code / immediate / by_value",
+  "timestamp": "2026-05-26T06:14:21.798Z",
+  "planDetailUrl": "https://localhost.emobix.co.uk:8443/plan-detail.html?plan=bn9MPZc7kAyvB",
+  "total": 3,
+  "passed": 0,
+  "failed": 3,
+  "modules": [
+    {
+      "module": "oid4vci-1_0-wallet-test-credential-issuance",
+      "status": "FINISHED",
+      "result": "FAILED",
+      "passed": false,
+      "conditions": {
+        "INFO": 8,
+        "SUCCESS": 110,
+        "FAILURE": 1
+      },
+      "failures": [
+        {
+          "src": "CheckForClientAssertionJtiReuse",
+          "msg": "Detected reuse of client_assertion JWT for jti=c4604f97-479e-4450-ad71-522495a5b15e"
+        }
+      ]
+    },
+    {
+      "module": "oid4vci-1_0-wallet-test-credential-issuance-notification",
+      "status": "FINISHED",
+      "result": "FAILED",
+      "passed": false,
+      "conditions": {
+        "INFO": 8,
+        "SUCCESS": 110,
+        "FAILURE": 1,
+        "SKIPPED": 1
+      },
+      "failures": [
+        {
+          "src": "CheckForClientAssertionJtiReuse",
+          "msg": "Detected reuse of client_assertion JWT for jti=b0e9c4bd-a3c2-4f8c-8b44-8032353afc6d"
+        }
+      ]
+    },
+    {
+      "module": "oid4vci-1_0-wallet-happy-path-with-scopes-without-authorization-details-in-token-response",
+      "status": "FINISHED",
+      "result": "FAILED",
+      "passed": false,
+      "conditions": {
+        "INFO": 8,
+        "SUCCESS": 109,
+        "FAILURE": 1
+      },
+      "failures": [
+        {
+          "src": "CheckForClientAssertionJtiReuse",
+          "msg": "Detected reuse of client_assertion JWT for jti=09703e55-6c5f-4147-8298-ed4d96a76762"
+        }
+      ]
+    }
+  ],
+  "metadata": {
+    "targetRepo": "",
+    "targetPr": "",
+    "runId": "26434403897",
+    "actor": "leifj",
+    "sha": "17784e743a251598fe05ddbc703733543eadd642",
+    "ref": "refs/heads/fix/remove-wallet-registry",
+    "images": {
+      "wallet-frontend": "ghcr.io/sirosfoundation/wallet-frontend:0.5.0-1-sirosid.5",
+      "go-wallet-backend": "ghcr.io/sirosfoundation/go-wallet-backend:0.5.2",
+      "go-trust": "ghcr.io/sirosfoundation/go-trust:0.5.0"
+    },
+    "goldenRelease": ""
+  }
+}
