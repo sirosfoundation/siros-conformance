@@ -1,8 +1,4 @@
-<<<<<<< HEAD
-.PHONY: install up-issuer up-verifier up-verifier-core up-wallet up-android down test-issuer test-verifier test-verifier-core \
-=======
 .PHONY: install up-issuer up-verifier up-verifier-core up-wallet up-android up-mini-wallet down test-issuer test-verifier test-verifier-core \
->>>>>>> 179ee91 (The mini-wallet profile: the raw Rust engine core under the OIDF)
 	test-wallet test-wallet-vci test-wallet-vp \
 	test-mini-wallet test-mini-wallet-vci \
 	test-android test-android-vci test-android-vp
@@ -42,11 +38,7 @@ up-mini-wallet:
 	$(COMPOSE) $(MINI_WALLET) $(GO_TRUST) $(VC_SERVICES) $(CONFORMANCE) up -d --remove-orphans
 
 down:
-<<<<<<< HEAD
-	$(COMPOSE) $(WALLET) $(VC_SERVICES) $(CORE) $(GO_TRUST) $(CONFORMANCE) down -v 2>/dev/null; true
-=======
 	$(COMPOSE) $(WALLET) $(MINI_WALLET) $(VC_SERVICES) $(CORE) $(GO_TRUST) $(CONFORMANCE) down -v 2>/dev/null; true
->>>>>>> 179ee91 (The mini-wallet profile: the raw Rust engine core under the OIDF)
 
 pull:
 	$(COMPOSE) $(WALLET) $(VC_SERVICES) $(CORE) $(GO_TRUST) $(CONFORMANCE) pull
