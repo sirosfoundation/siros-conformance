@@ -1,5 +1,10 @@
+<<<<<<< HEAD
 .PHONY: install up-issuer up-verifier up-verifier-core up-wallet up-android down test-issuer test-verifier test-verifier-core \
+=======
+.PHONY: install up-issuer up-verifier up-verifier-core up-wallet up-android up-mini-wallet down test-issuer test-verifier test-verifier-core \
+>>>>>>> 179ee91 (The mini-wallet profile: the raw Rust engine core under the OIDF)
 	test-wallet test-wallet-vci test-wallet-vp \
+	test-mini-wallet test-mini-wallet-vci \
 	test-android test-android-vci test-android-vp
 
 COMPOSE := docker compose
@@ -7,6 +12,7 @@ CONFORMANCE := -f compose/conformance-suite.yml
 VC_SERVICES := -f compose/vc-services.yml
 GO_TRUST := -f compose/go-trust.yml
 WALLET := -f compose/wallet.yml
+MINI_WALLET := -f compose/wallet.yml -f compose/mini-wallet.yml
 ANDROID := -f compose/android-wallet.yml
 CORE := -f compose/siros-verifier-core.yml
 
@@ -28,8 +34,19 @@ up-verifier-core:
 up-wallet:
 	$(COMPOSE) $(WALLET) $(GO_TRUST) $(VC_SERVICES) $(CONFORMANCE) up -d
 
+# The raw Rust engine as the wallet under test: the mini-wallet page
+# replaces wallet-frontend + wallet-backend (docs/oidf-conformance.md).
+# Build the page first: `make wasm-page` in the siros-wallet-core
+# checkout, then WALLET_PAGE_DIR=<…>/target/wasm-page here.
+up-mini-wallet:
+	$(COMPOSE) $(MINI_WALLET) $(GO_TRUST) $(VC_SERVICES) $(CONFORMANCE) up -d --remove-orphans
+
 down:
+<<<<<<< HEAD
 	$(COMPOSE) $(WALLET) $(VC_SERVICES) $(CORE) $(GO_TRUST) $(CONFORMANCE) down -v 2>/dev/null; true
+=======
+	$(COMPOSE) $(WALLET) $(MINI_WALLET) $(VC_SERVICES) $(CORE) $(GO_TRUST) $(CONFORMANCE) down -v 2>/dev/null; true
+>>>>>>> 179ee91 (The mini-wallet profile: the raw Rust engine core under the OIDF)
 
 pull:
 	$(COMPOSE) $(WALLET) $(VC_SERVICES) $(CORE) $(GO_TRUST) $(CONFORMANCE) pull
@@ -51,6 +68,14 @@ test-wallet-vp:
 	NODE_TLS_REJECT_UNAUTHORIZED=0 npx playwright test specs/conformance/oid4vp-wallet.spec.ts
 
 test-wallet: test-wallet-vci test-wallet-vp
+
+# The raw engine against the OIDF plans: the mini-wallet spec drives the
+# page by the same URL contract the wallet specs use.
+test-mini-wallet:
+	NODE_TLS_REJECT_UNAUTHORIZED=0 npx playwright test specs/conformance/mini-wallet.spec.ts
+
+test-mini-wallet-vci:
+	NODE_TLS_REJECT_UNAUTHORIZED=0 npx playwright test specs/conformance/mini-wallet.spec.ts --grep "oid4vci"
 
 # ── Android wallet tests (via ADB / Waydroid) ───────────────────────────────
 up-android:

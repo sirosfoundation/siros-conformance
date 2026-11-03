@@ -1,0 +1,39 @@
+# Mini-wallet overlay (the raw Rust engine core as the wallet under test)
+#
+# Composed on top of wallet.yml (docs/oidf-conformance.md in
+# siros-wallet-core): the wallet-frontend + go-wallet-backend services
+# are moved to the "disabled" profile — the overlay trick for removing a
+# service — and the wasm mini-wallet page takes their place. Everything
+# else (the vc-issuer stack, go-trust-allow, the conformance suite) is
+# unchanged.
+#
+# Build the page first (from the siros-wallet-core checkout):
+#   make wasm-page
+# then here:
+#   WALLET_PAGE_DIR=<path>/target/wasm-page make up-mini-wallet
+
+services:
+  # Replaced by the mini-wallet page below.
+  wallet-frontend:
+    profiles: ["disabled"]
+  wallet-backend:
+    profiles: ["disabled"]
+
+  # The raw engine in the browser: the wasm harness page, served as
+  # static files. The page's engine config (fetch, PDP, kv callbacks)
+  # comes from mini-wallet.json next to the page — engine-adapter-wasm's
+  # harness reads it at load.
+  mini-wallet:
+    image: nginx:alpine
+    container_name: mini-wallet
+    ports:
+      - "3010:80"
+    volumes:
+      - ${WALLET_PAGE_DIR:-../siros-wallet-core/target/wasm-page}:/usr/share/nginx/html:ro
+    healthcheck:
+      test: ["CMD", "wget", "-q", "--spider", "http://localhost:80/"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+    networks:
+      - conformance-network
