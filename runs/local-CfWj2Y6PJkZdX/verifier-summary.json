@@ -1,0 +1,98 @@
+{
+  "profile": "siros-verifier-core",
+  "plan": "oid4vp-1final-verifier-test-plan",
+  "planId": "CfWj2Y6PJkZdX",
+  "variant": "sd_jwt_vc / x509_hash / direct_post.jwt / request_uri_signed / plain_vp",
+  "timestamp": "2026-11-03T06:16:23.111Z",
+  "planDetailUrl": "https://localhost.emobix.co.uk:8443/plan-detail.html?plan=CfWj2Y6PJkZdX",
+  "total": 14,
+  "passed": 14,
+  "failed": 0,
+  "skipped": 0,
+  "modules": [
+    {
+      "module": "oid4vp-1final-verifier-happy-flow",
+      "status": "FINISHED",
+      "result": "REVIEW",
+      "passed": true
+    },
+    {
+      "module": "oid4vp-1final-verifier-minimal-cnf-jwk",
+      "status": "FINISHED",
+      "result": "REVIEW",
+      "passed": true
+    },
+    {
+      "module": "oid4vp-1final-verifier-request-uri-method-post",
+      "status": "FINISHED",
+      "result": "REVIEW",
+      "passed": true
+    },
+    {
+      "module": "oid4vp-1final-verifier-request-uri-fetched-twice",
+      "status": "FINISHED",
+      "result": "REVIEW",
+      "passed": true
+    },
+    {
+      "module": "oid4vp-1final-verifier-invalid-kb-jwt-signature",
+      "status": "FINISHED",
+      "result": "PASSED",
+      "passed": true
+    },
+    {
+      "module": "oid4vp-1final-verifier-invalid-credential-signature",
+      "status": "FINISHED",
+      "result": "PASSED",
+      "passed": true
+    },
+    {
+      "module": "oid4vp-1final-verifier-invalid-sd-hash",
+      "status": "FINISHED",
+      "result": "PASSED",
+      "passed": true
+    },
+    {
+      "module": "oid4vp-1final-verifier-invalid-kb-jwt-nonce",
+      "status": "FINISHED",
+      "result": "PASSED",
+      "passed": true
+    },
+    {
+      "module": "oid4vp-1final-verifier-invalid-kb-jwt-aud",
+      "status": "FINISHED",
+      "result": "PASSED",
+      "passed": true
+    },
+    {
+      "module": "oid4vp-1final-verifier-kb-jwt-iat-in-past",
+      "status": "FINISHED",
+      "result": "PASSED",
+      "passed": true
+    },
+    {
+      "module": "oid4vp-1final-verifier-kb-jwt-iat-in-future",
+      "status": "FINISHED",
+      "result": "PASSED",
+      "passed": true
+    },
+    {
+      "module": "oid4vp-1final-verifier-present-revoked-credential",
+      "status": "FINISHED",
+      "result": "PASSED",
+      "passed": true
+    },
+    {
+      "module": "oid4vp-1final-verifier-present-credential-without-status",
+      "status": "FINISHED",
+      "result": "REVIEW",
+      "passed": true
+    },
+    {
+      "module": "oid4vp-1final-verifier-wrong-vct",
+      "status": "FINISHED",
+      "result": "PASSED",
+      "passed": true
+    }
+  ]
+}
