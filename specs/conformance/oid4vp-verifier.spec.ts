@@ -39,6 +39,7 @@ const CORE_DCQL = {
 
 const CORE_EVIDENCE_MODULES = new Set([
   'oid4vp-1final-verifier-happy-flow',
+  'oid4vp-1final-verifier-request-uri-method-post',
   'oid4vp-1final-verifier-minimal-cnf-jwk',
   'oid4vp-1final-verifier-request-uri-fetched-twice',
   'oid4vp-1final-verifier-present-revoked-credential',

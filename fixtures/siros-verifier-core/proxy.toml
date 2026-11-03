@@ -51,6 +51,7 @@ name = "vp"
   max_receipt_ttl_secs = 300
   role = "pid-provider"
   request_ttl_secs = 300
+  request_uri_method = "post"
   subject_pointer = "/given_name"
   dcql = { credentials = [{ id = "eudi_pid", format = "dc+sd-jwt", meta = { vct_values = ["urn:eudi:pid:1"] }, claims = [{ path = ["given_name"] }] }] }
   attribute_map = { givenname = "/given_name" }
