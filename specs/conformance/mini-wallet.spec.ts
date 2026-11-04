@@ -57,9 +57,13 @@ const VARIANTS = [
       vci_grant_type: 'pre_authorization_code',
       vci_credential_issuance_mode: 'immediate',
       vci_credential_offer_variant: 'by_value',
-      sender_constrain: 'none',
+      sender_constrain: 'dpop',
       vci_credential_encryption: 'plain',
-      client_auth_type: 'none',
+      fapi_profile: 'vci',
+      fapi_request_method: 'unsigned',
+      client_auth_type: 'private_key_jwt',
+      authorization_request_type: 'simple',
+      vci_authorization_code_flow_variant: 'issuer_initiated',
     },
   },
   {
@@ -69,9 +73,13 @@ const VARIANTS = [
       vci_grant_type: 'pre_authorization_code',
       vci_credential_issuance_mode: 'deferred',
       vci_credential_offer_variant: 'by_value',
-      sender_constrain: 'none',
+      sender_constrain: 'dpop',
       vci_credential_encryption: 'plain',
-      client_auth_type: 'none',
+      fapi_profile: 'vci',
+      fapi_request_method: 'unsigned',
+      client_auth_type: 'private_key_jwt',
+      authorization_request_type: 'simple',
+      vci_authorization_code_flow_variant: 'issuer_initiated',
     },
   },
 ];
@@ -184,7 +192,9 @@ test.describe('Mini-wallet (the raw Rust engine core) — OID4VCI', () => {
             module: moduleName,
             status: finalInfo.status,
             result: finalInfo.result,
-            passed: finalInfo.result === 'PASSED',
+            // SKIPPED is not a failure: the suite skips the modules the
+            // plan variant does not exercise (e.g. batch issuance).
+            passed: finalInfo.result === 'PASSED' || finalInfo.result === 'SKIPPED',
           });
         }
 
