@@ -7,7 +7,9 @@ services:
     image: mongo:7.0
     container_name: vc-mongodb
     ports:
-      - "27017:27017"
+      # Debug-only host mapping (the services talk over the internal
+      # network); 27117 stays out of the way of a host mongod.
+      - "27117:27017"
     volumes:
       - mongodb-data:/data/db
     healthcheck:
@@ -27,6 +29,7 @@ services:
     volumes:
       - ../fixtures/vc-config.yaml:/config.yaml:ro
       - ../fixtures/vc-pki:/pki:ro
+      - ../fixtures/vc-metadata:/metadata:ro
     environment:
       - VC_CONFIG_YAML=/config.yaml
       - SSL_CERT_FILE=/pki/rootCA.crt
@@ -51,6 +54,7 @@ services:
     volumes:
       - ../fixtures/vc-config.yaml:/config.yaml:ro
       - ../fixtures/vc-pki:/pki:ro
+      - ../fixtures/vc-metadata:/metadata:ro
       - ../fixtures/vc-metadata:/metadata:ro
     environment:
       - VC_CONFIG_YAML=/config.yaml
@@ -79,6 +83,7 @@ services:
       - ../fixtures/vc-config.yaml:/config.yaml:ro
       - ../fixtures/vc-pki:/pki:ro
       - ../fixtures/vc-metadata:/metadata:ro
+      - ../fixtures/vc-metadata:/metadata:ro
       - ../fixtures/vc-presentation-requests:/presentation_requests:ro
       - ../fixtures/oauth-metadata-verifier.json:/oauth-metadata.json:ro
       - ../fixtures/verifier-static:/static:ro
@@ -106,6 +111,7 @@ services:
       - ../fixtures/vc-config.yaml:/config.yaml:ro
       - ../fixtures/vc-pki:/pki:ro
       - ../fixtures/vc-metadata:/metadata:ro
+      - ../fixtures/vc-metadata:/metadata:ro
       - ../fixtures/oauth-metadata-apigw.json:/oauth-metadata.json:ro
     environment:
       - VC_CONFIG_YAML=/config.yaml
@@ -126,29 +132,24 @@ services:
     networks:
       - conformance-network
 
+  # The 0.7.20 vc stack's OIDC provider: navikt mock-oauth2-server, as
+  # the vc repo's own docker-compose runs it (the pre-0.7 vc-mockas
+  # image is gone with the old config schema it parsed). Serves the
+  # issuer at /default — the apigw's auth_providers.oidc issuer_url in
+  # fixtures/vc-config.yaml points at http://vc-mockas:8080/default.
   vc-mockas:
-    image: ${VC_MOCKAS_IMAGE:-ghcr.io/sirosfoundation/vc/mockas:latest}
+    image: ${VC_MOCKAS_IMAGE:-ghcr.io/navikt/mock-oauth2-server:2.1.10}
     container_name: vc-mockas
     ports:
       - "9002:8080"
-    volumes:
-      - ../fixtures/vc-config.yaml:/config.yaml:ro
-      - ../fixtures/vc-pki:/pki:ro
-      - ../fixtures/vc-users:/users:ro
     environment:
-      - VC_CONFIG_YAML=/config.yaml
-      - SSL_CERT_FILE=/pki/rootCA.crt
-    depends_on:
-      mongodb:
-        condition: service_healthy
-      vc-apigw:
-        condition: service_healthy
+      - LOG_LEVEL=info
     healthcheck:
-      test: ["CMD", "curl", "-sf", "http://localhost:8080/health"]
+      test: ["CMD", "wget", "-q", "--spider", "http://localhost:8080/default/.well-known/openid-configuration"]
       interval: 5s
       timeout: 5s
       retries: 10
-      start_period: 30s
+      start_period: 10s
     networks:
       - conformance-network
 

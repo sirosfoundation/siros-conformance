@@ -1,10 +1,12 @@
 # VC Services Configuration for Conformance Testing
 #
-# NOTE: This config targets the Jan 2026 (:latest) Docker image config schema.
-# The vc source code has since been refactored — if images are rebuilt,
-# this file may need updating.
+# Targets the 0.7.20 image schema (the config structure the vc repo's
+# config.yaml documents, Nov 2026). The pre-0.7 fixture's sections —
+# authentic_sources, oauth_server, mock_as — no longer exist; the
+# services now share key_config blocks, and the apigw owns the
+# data_sources and the openid4vci delivery.
 #
-# Service Ports:
+# Service Ports (host mappings in compose/vc-services.yml):
 #   - 9000: vc-issuer (OpenID4VCI)
 #   - 9001: vc-verifier (OpenID4VP + OIDC)
 #   - 9002: vc-mockas (Mock Auth Server)
@@ -16,139 +18,141 @@ common:
   production: false
   mongo:
     uri: mongodb://mongodb:27017
-  tracing:
-    addr: "localhost:4318"
-    type: "noop"
-    timeout: 1
-  credential_offer:
-    type: "credential_offer"
-    issuer_url: "http://localhost:9003"
-    wallet_url: "http://localhost:3000/cb"
-    qr:
-      recovery_level: 2
-      size: 256
-  kafka:
-    enabled: false
-    brokers:
-      - "kafka0:9092"
+  credential_metadata:
+    pid:
+      vctm_file_path: "/metadata/vctm_pid.json"
+      format: "dc+sd-jwt"
+    diploma:
+      vctm_file_path: "/metadata/vctm_diploma.json"
+      format: "dc+sd-jwt"
+    ehic:
+      vctm_file_path: "/metadata/vctm_ehic.json"
+      format: "dc+sd-jwt"
+    eduid:
+      vctm_file_path: "/metadata/vctm_eduid.json"
+      format: "dc+sd-jwt"
 
-# =============================================================================
-# Authentic Sources (required by apigw for vcclient initialization)
-# =============================================================================
-authentic_sources:
-  "http://localhost:9003":
-    country_code: "SE"
-    notification_endpoint:
-      url: "http://vc-mockas:8080/notification"
-    authentic_source_endpoint:
-      url: "http://vc-mockas:8080"
-    signature_service_endpoint:
-      url: "http://vc-issuer:8080"
-    revocation_service_endpoint:
-      url: "http://vc-registry:8080"
-    credential_types:
-      "pid":
-        profile: "sd-jwt-vc"
-
-# =============================================================================
-# API Gateway (apigw)
-# =============================================================================
-apigw:
-  api_server:
-    addr: ":8080"
-  external_server_url: "http://localhost:9003"
-  issuer_client:
-    addr: "vc-issuer:8090"
-  registry_client:
-    addr: "vc-registry:8090"
-  oauth_server:
-    token_endpoint: "http://localhost:9003/token"
-    clients:
-      "e2e-test-client":
-        type: "public"
-        redirect_uri: "http://localhost:3000/cb"
-        scopes:
-          - "pid"
-          - "diploma"
-          - "ehic"
-          - "eduid"
-    metadata:
-      path: "/oauth-metadata.json"
-      signing_key_path: "/pki/signing_ec_private.pem"
-      signing_chain_path: "/pki/signing_ec_chain.pem"
-
-# =============================================================================
-# Issuer Service
-# =============================================================================
 issuer:
   api_server:
     addr: ":8080"
   grpc_server:
     addr: ":8090"
-  identifier: "http://localhost:9003"
   issuer_url: "http://localhost:9003"
-  signing_key_path: "/pki/signing_ec_private.pem"
   registry_client:
     addr: "vc-registry:8090"
+  key_config:
+    private_key_path: "/pki/signing_ec_private.pem"
+    chain_path: "/pki/signing_ec_chain.pem"
   jwt_attribute:
     issuer: "http://localhost:9003"
     enable_not_before: true
     valid_duration: 3600
     verifiable_credential_type: "https://credential.e2etest.local/identity_credential"
 
-# =============================================================================
-# Verifier Service
-# =============================================================================
 verifier:
   api_server:
     addr: ":8080"
   grpc_server:
     addr: ":8090"
-  external_server_url: "http://localhost:9001"
-  oauth_server:
-    token_endpoint: "http://localhost:9001/token"
-    clients:
-      "e2e-test-client":
-        type: "confidential"
-        redirect_uri: "http://localhost:3000/cb"
-        scopes:
-          - "pid"
-          - "diploma"
-          - "ehic"
-          - "eduid"
-    metadata:
-      path: "/oauth-metadata.json"
-      signing_key_path: "/pki/signing_ec_private.pem"
-      signing_chain_path: "/pki/signing_ec_chain.pem"
+  public_url: "http://localhost:9001"
+  key_config:
+    private_key_path: "/pki/signing_ec_private.pem"
+    chain_path: "/pki/signing_ec_chain.pem"
+  outbound:
+    oidc_provider:
+      issuer: "http://localhost:9001"
+      subject_type: "public"
+      subject_salt: "conformance-verifier-salt"
+      code_duration: 300
+      session_duration: 3600
+      access_token_duration: 3600
+      id_token_duration: 3600
+      refresh_token_duration: 86400
+  inbound:
+    openid4vp:
+      token_endpoint: "http://localhost:9001/token"
+      clients:
+        "e2e-test-client":
+          type: "public"
+          redirect_uri: "http://localhost:3000/cb"
+          scopes:
+            - "pid"
+            - "diploma"
+            - "ehic"
+            - "eduid"
+      supported_credentials:
+        - vct: "urn:eudi:pid:1"
+          scopes:
+            - "pid"
+        - vct: "https://credential.e2etest.local/identity_credential"
+          scopes:
+            - "diploma"
+            - "ehic"
+            - "eduid"
 
-# =============================================================================
-# Registry Service
-# =============================================================================
 registry:
   api_server:
     addr: ":8080"
   grpc_server:
     addr: ":8090"
-  external_server_url: "http://localhost:9004"
+  public_url: "http://localhost:9004"
   token_status_lists:
-    signing_key_path: "/pki/signing_ec_private.pem"
+    key_config:
+      private_key_path: "/pki/signing_ec_private.pem"
+      chain_path: "/pki/signing_ec_chain.pem"
   admin_gui:
-    enabled: true
+    enable: true
     username: "admin"
     password: "e2e-admin-password"
-    session_secret: "e2e-test-session-secret-change-me"
 
-# =============================================================================
-# Mock Authentication Server
-# =============================================================================
-mock_as:
+apigw:
+  key_config:
+    private_key_path: "/pki/signing_ec_private.pem"
+    chain_path: "/pki/signing_ec_chain.pem"
   api_server:
     addr: ":8080"
-  datastore_url: "http://vc-apigw:8080"
-  auto_approve: true
-  bootstrap_users:
-    - "test-user-001"
-    - "test-user-002"
-    - "test-user-003"
-    - "100"
-    - "102"
+    api_auth:
+      oidc:
+        enable: false
+  public_url: "http://localhost:9003"
+  registry_public_url: "http://localhost:9004"
+  issuer_client:
+    addr: "vc-issuer:8090"
+  registry_client:
+    addr: "vc-registry:8090"
+  data_sources:
+    datastore:
+      scopes:
+        pid:
+          auth_provider: oidc
+          auth_claims: ["given_name", "family_name", "birth_date"]
+  auth_providers:
+    oidc:
+      enable: true
+      issuer_url: "http://vc-mockas:8080/default"
+      redirect_uri: "http://localhost:9003/oidcrp/callback"
+      scopes: ["openid", "profile"]
+      session_duration: 300
+      registration:
+        preconfigured:
+          enable: true
+          client_id: "vc-apigw"
+          client_secret: "vc-apigw-secret"
+  delivery:
+    openid4vci:
+      token_endpoint: "http://localhost:9003/token"
+      clients:
+        "e2e-test-client":
+          type: "public"
+          redirect_uri: "http://localhost:3000/cb"
+          scopes:
+            - "pid"
+            - "diploma"
+            - "ehic"
+            - "eduid"
+    credential_offers:
+      issuer_url: "http://localhost:9003"
+      wallets:
+        conformance_wallet:
+          label: "Conformance Test Wallet"
+          redirect_uri: "http://localhost:3000/cb"
