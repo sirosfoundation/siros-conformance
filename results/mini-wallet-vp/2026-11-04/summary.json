@@ -1,0 +1,73 @@
+{
+  "run": "mini-wallet Phase 2 — the OID4VP wallet plan against the raw Rust engine",
+  "date": "2026-11-04",
+  "suite": {
+    "url": "https://localhost.emobix.co.uk:8443/",
+    "version": "5.3.4",
+    "plan": "oid4vp-1final-wallet-test-plan",
+    "alias": "siros-wallet-vp-test"
+  },
+  "wallet": {
+    "harness": "engine-adapter-wasm's mini-wallet page (target/wasm-page)",
+    "engine": "siros-wallet-core",
+    "engine_commit": "see metadata.sha in the plan summaries (the Phase 2 OID4VP work)",
+    "profile": "mini-wallet (wallet-frontend and go-wallet-backend disabled; the mini host holds a self-issued PID SD-JWT holder-bound to the device key and builds the SD-JWT+KB presentations)"
+  },
+  "variant": {
+    "credential_format": "sd_jwt_vc",
+    "client_id_prefix": "x509_san_dns",
+    "request_method": "request_uri_signed",
+    "vp_profile": "plain_vp",
+    "response_mode": "direct_post | direct_post.jwt (both run)"
+  },
+  "plans": [
+    {
+      "variant": "sd_jwt_vc / x509_san_dns / direct_post / request_uri_signed / plain_vp",
+      "plan_id": "S89PzOyNtX2hW",
+      "report": "conformance-report-S89PzOyNtX2hW.zip",
+      "modules": [
+        { "module": "oid4vp-1final-wallet-happy-flow", "result": "PASSED" },
+        { "module": "oid4vp-1final-wallet-alternate-happy-flow", "result": "PASSED" },
+        { "module": "oid4vp-1final-wallet-request-uri-method-post", "result": "SKIPPED" },
+        { "module": "oid4vp-1final-wallet-fewer-claims-than-available", "result": "PASSED" },
+        { "module": "oid4vp-1final-wallet-optional-credential-set", "result": "PASSED" },
+        { "module": "oid4vp-1final-wallet-no-claims-in-dcql-query", "result": "PASSED" },
+        { "module": "oid4vp-1final-wallet-negative-test-invalid-request-object-signature", "result": "REVIEW" },
+        { "module": "oid4vp-1final-wallet-negative-test-invalid-request-object-typ", "result": "REVIEW" },
+        { "module": "oid4vp-1final-wallet-negative-test-missing-request-object-typ", "result": "REVIEW" },
+        { "module": "oid4vp-1final-wallet-negative-test-mismatched-client-id", "result": "REVIEW" },
+        { "module": "oid4vp-1final-wallet-negative-test-redirect-uri-with-direct-post", "result": "REVIEW" },
+        { "module": "oid4vp-1final-wallet-negative-test-missing-nonce", "result": "REVIEW" },
+        { "module": "oid4vp-1final-wallet-negative-test-invalid-client-id-prefix", "result": "REVIEW" },
+        { "module": "oid4vp-1final-wallet-negative-test-unknown-transaction-data-type", "result": "REVIEW" },
+        { "module": "oid4vp-1final-wallet-negative-test-required-non-matching-credential", "result": "PASSED" },
+        { "module": "oid4vp-1final-wallet-negative-test-claim-not-in-credential", "result": "REVIEW" }
+      ]
+    },
+    {
+      "variant": "sd_jwt_vc / x509_san_dns / direct_post.jwt / request_uri_signed / plain_vp",
+      "plan_id": "Gu9bIIsHCnZ1S",
+      "report": "conformance-report-Gu9bIIsHCnZ1S.zip",
+      "modules": [
+        { "module": "oid4vp-1final-wallet-happy-flow", "result": "PASSED" },
+        { "module": "oid4vp-1final-wallet-alternate-happy-flow", "result": "PASSED" },
+        { "module": "oid4vp-1final-wallet-request-uri-method-post", "result": "SKIPPED" },
+        { "module": "oid4vp-1final-wallet-ignores-unusable-encryption-key", "result": "PASSED" },
+        { "module": "oid4vp-1final-wallet-fewer-claims-than-available", "result": "PASSED" },
+        { "module": "oid4vp-1final-wallet-optional-credential-set", "result": "PASSED" },
+        { "module": "oid4vp-1final-wallet-no-claims-in-dcql-query", "result": "PASSED" },
+        { "module": "oid4vp-1final-wallet-negative-test-invalid-request-object-signature", "result": "REVIEW" },
+        { "module": "oid4vp-1final-wallet-negative-test-invalid-request-object-typ", "result": "REVIEW" },
+        { "module": "oid4vp-1final-wallet-negative-test-missing-request-object-typ", "result": "REVIEW" },
+        { "module": "oid4vp-1final-wallet-negative-test-mismatched-client-id", "result": "REVIEW" },
+        { "module": "oid4vp-1final-wallet-negative-test-redirect-uri-with-direct-post", "result": "REVIEW" },
+        { "module": "oid4vp-1final-wallet-negative-test-missing-nonce", "result": "REVIEW" },
+        { "module": "oid4vp-1final-wallet-negative-test-invalid-client-id-prefix", "result": "REVIEW" },
+        { "module": "oid4vp-1final-wallet-negative-test-unknown-transaction-data-type", "result": "REVIEW" },
+        { "module": "oid4vp-1final-wallet-negative-test-required-non-matching-credential", "result": "PASSED" },
+        { "module": "oid4vp-1final-wallet-negative-test-claim-not-in-credential", "result": "REVIEW" }
+      ]
+    }
+  ],
+  "notes": "REVIEW is the negative modules' expected outcome: the wallet correctly refused the invalid request (verified per-error in the flow detail) and the tester's screenshot evidence was uploaded through the suite's placeholder API — the certification procedure's manual step, automated. request-uri-method-post is SKIPPED by the suite (the agreed variant does not exercise the POST request_uri method). The haip profile and the iso_mdl format remain: haip needs the x509_hash client_id scheme (and the dc_api browser variants); iso_mdl needs the mdoc presentation path in the mini host. Reproduce with: make wasm-page in siros-wallet-core, then npx playwright test specs/conformance/mini-wallet-vp.spec.ts here."
+}

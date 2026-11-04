@@ -44,12 +44,17 @@ test('drive one OID4VP module through the mini-wallet page', async ({ page }) =>
   await api.waitForServerReady(30000);
 
   const config = JSON.parse(fs.readFileSync(VP_CONFIG_PATH, 'utf8'));
-  const plan = await api.createTestPlan(VP_PLAN_NAME, JSON.stringify(config), {
+  // The haip profile runs its own plan.
+  const planName =
+    process.env.VP_PROFILE === 'haip'
+      ? 'oid4vp-1final-wallet-haip-test-plan'
+      : VP_PLAN_NAME;
+  const plan = await api.createTestPlan(planName, JSON.stringify(config), {
     credential_format: 'sd_jwt_vc',
-    client_id_prefix: 'x509_san_dns',
-    response_mode: 'direct_post',
+    client_id_prefix: process.env.VP_CLIENT_ID_PREFIX || 'x509_san_dns',
+    response_mode: process.env.VP_RESPONSE_MODE || 'direct_post',
     request_method: 'request_uri_signed',
-    vp_profile: 'plain_vp',
+    vp_profile: process.env.VP_PROFILE || 'plain_vp',
   });
   console.log('PLAN', plan.id);
 
@@ -101,22 +106,29 @@ test('drive one OID4VP module through the mini-wallet page', async ({ page }) =>
   console.log('LOGS:\n' + logs.join('\n'));
 
   // The negative tests transition to FINISHED only when the tester
-  // uploads the wallet's error screen: a small placeholder serves the
-  // automation (the certification procedure's manual step).
+  // uploads the wallet's error screen to the module's placeholder: the
+  // module's log entry with an `upload` member carries the placeholder
+  // id, and the image POSTs to /api/log/{id}/images/{placeholder} as a
+  // data URI. REVIEW is the expected outcome — the wallet refused and
+  // the screenshot is the tester's evidence.
   if (flowState === 'error') {
     try {
-      const png = Buffer.from(
-        'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNkYPhfDwAChwGA60e6kgAAAABJRU5ErkJggg==',
-        'base64'
+      const log = (await api.getTestLog(moduleId)) as any[];
+      const placeholder = log.find((e: any) => typeof e.upload === 'string')?.upload;
+      if (!placeholder) throw new Error('no placeholder in the module log');
+      const png =
+        'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNkYPhfDwAChwGA60e6kgAAAABJRU5ErkJggg==';
+      const res = await page.request.fetch(
+        `${CONFORMANCE_URL}api/log/${moduleId}/images/${placeholder}`,
+        {
+          method: 'POST',
+          headers: { 'Content-Type': 'text/plain', 'Upload-Source': 'automated-test' },
+          data: png,
+          failOnStatusCode: false,
+          ignoreHTTPSErrors: true,
+        }
       );
-      await page.request.fetch(`${CONFORMANCE_URL}log/${moduleId}/images`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'image/png', 'Upload-Source': 'automated-test' },
-        data: png,
-        failOnStatusCode: false,
-        ignoreHTTPSErrors: true,
-      });
-      console.log('PLACEHOLDER: uploaded');
+      console.log('PLACEHOLDER:', placeholder, '->', res.status());
     } catch (e) {
       console.log('PLACEHOLDER: failed', String(e));
     }
