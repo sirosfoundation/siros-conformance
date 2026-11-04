@@ -205,6 +205,72 @@ npx playwright test specs/conformance/oid4vci-wallet.spec.ts --grep "mdoc" --tra
 | `ADMIN_TOKEN` | `e2e-test-admin-token-for-testing-purposes-only` | Admin API token |
 | `NODE_TLS_REJECT_UNAUTHORIZED` | (must be `0`) | Required for self-signed conformance suite cert |
 | `GITHUB_ACTOR`, `GITHUB_SHA` | (CI only) | Injected into config for traceability |
+| `VCI_MODE` | `immediate` | The debug spec's issuance mode (`immediate` / `deferred`) |
+
+## The Mini-Wallet (the raw Rust engine)
+
+`specs/conformance/mini-wallet.spec.ts` runs the OID4VCI wallet plan against
+the **raw Rust engine** (`siros-wallet-core`) instead of wallet-frontend +
+go-wallet-backend: the engine's wasm adapter serves a harness page whose
+built-in mini host auto-consents and holds the keys. The suite judges the
+engine by its HTTP traffic alone.
+
+```bash
+# siros-wallet-core: build the wasm and the page
+cargo build -p engine-adapter-wasm --target wasm32-unknown-unknown
+make wasm-page
+
+# here: the stack (wallet-frontend/backend disabled by the profile)
+WALLET_PAGE_DIR=<…>/siros-wallet-core/target/wasm-page make up-mini-wallet
+make test-mini-wallet
+```
+
+- `specs/debug/mini-page-debug.spec.ts` drives ONE module with full
+  request/response capture (the tool for wire-level debugging);
+  `VCI_MODE=deferred` flips its variant.
+- Results are archived under `results/mini-wallet/<date>/` (summary.json,
+  the exported report ZIPs, a README) — commit them; they are the durable
+  objective evidence.
+- Phase 1 (OID4VCI, both variants) is green as of 2026-11-04; the run's
+  record lives in `results/mini-wallet/2026-11-04/`.
+
+## Publishing Results to GitHub Pages
+
+The site at https://sirosfoundation.github.io/siros-conformance/ lists every
+run under `runs/<run-id>/`. CI publishes automatically: each wallet/issuer/
+verifier workflow drops `conformance-results/*-summary.json` plus the
+exported `conformance-report-<planId>.zip` files, then runs
+`scripts/publish-pages.mjs`, which extracts the reports, brands them,
+regenerates the indexes, and pushes the `gh-pages` branch (keeping the
+latest 20 runs).
+
+To publish a **local** run (e.g. the mini-wallet Phase 1 evidence):
+
+1. **Export the reports** for each green plan:
+   `curl -skf -o conformance-report-<planId>.zip \
+   https://localhost.emobix.co.uk:8443/api/plan/exporthtml/<planId>`
+2. **Write one `*-summary.json` per plan** (any filename ending in
+   `-summary.json`), matching the shape the wallet spec writes
+   (`specs/conformance/oid4vci-wallet.spec.ts`):
+   - `profile` — one of `wallet-vci`, `wallet-vp`, `issuer`, `verifier`,
+     `mini-wallet` (the label map is in `scripts/publish-pages.mjs`)
+   - `plan`, `planId`, `variant`, `timestamp`, `planDetailUrl`
+   - `total`, `passed`, `failed` and `modules[]` with
+     `{module, status, result, passed, conditions, failures}`.
+     The per-module `conditions` counts come from tallying `entry.result`
+     over `api/log/{moduleId}` (see `getModuleConditions` in
+     `helpers/conformance-api.ts`); the module's instance id is
+     `instances[0]` from `api/plan/{planId}`. A module `SKIPPED` by the
+     suite is not a failure — mark it `passed: true` and keep `result:
+     "SKIPPED"` visible.
+   - `metadata` — `targetRepo`/`sha` name the component under test,
+     `actor`, `ref`; they render as the run page's links.
+3. **Publish**: `node scripts/publish-pages.mjs <staging-dir> --run-id <id>`
+   — it pushes `gh-pages` itself; the site rebuilds a minute or two later.
+4. The run appears at `…/runs/<id>/` and on the site's front page.
+
+Verify with `git ls-remote origin gh-pages` if the site 404s right after a
+push (Pages rebuilds asynchronously).
 
 ## Golden Releases
 

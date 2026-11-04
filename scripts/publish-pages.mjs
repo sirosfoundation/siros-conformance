@@ -366,7 +366,7 @@ function htmlFooter() {
 </html>`;
 }
 
-const PROFILE_LABELS = { 'wallet-vci': 'OID4VCI Wallet', 'wallet-vp': 'OID4VP Wallet', 'issuer': 'OID4VCI Issuer', 'verifier': 'OID4VP Verifier' };
+const PROFILE_LABELS = { 'wallet-vci': 'OID4VCI Wallet', 'wallet-vp': 'OID4VP Wallet', 'issuer': 'OID4VCI Issuer', 'verifier': 'OID4VP Verifier', 'mini-wallet': 'OID4VCI Wallet — mini (the raw Rust engine)' };
 
 // Condition categories in display order (left→right in the bar)
 const COND_CATS = [
