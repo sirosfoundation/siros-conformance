@@ -1,0 +1,53 @@
+{
+    "run": "mini-wallet-vp-haip — the OID4VP HAIP wallet plan against the raw Rust engine",
+    "date": "2026-11-05",
+    "suite": {
+        "url": "https://localhost.emobix.co.uk:8443/",
+        "version": "5.3.4",
+        "plan": "oid4vp-1final-wallet-haip-test-plan",
+        "alias": "siros-wallet-vp-test"
+    },
+    "wallet": {
+        "harness": "engine-adapter-wasm's mini-wallet page (target/wasm-page)",
+        "engine": "siros-wallet-core",
+        "engine_commit": "uncommitted (the x509_hash scheme, the x5c-chained PID)",
+        "profile": "mini-wallet with the HAIP trust material: the PID carries its X.509 chain (HAIP-6.1.1), fixtures/mini-wallet-pki"
+    },
+    "variant": {
+        "credential_format": "sd_jwt_vc",
+        "credential_type": "eudi_pid",
+        "response_mode": "direct_post.jwt"
+    },
+    "plans": [
+        {
+            "variant": "sd_jwt_vc / eudi_pid / haip / direct_post.jwt",
+            "plan_id": "x03k3BO5eKEsQ",
+            "plan_detail": "https://localhost.emobix.co.uk:8443/plan-detail.html?log=x03k3BO5eKEsQ",
+            "report": "conformance-report-x03k3BO5eKEsQ.zip",
+            "modules": [
+                { "module": "oid4vp-1final-wallet-happy-flow", "result": "PASSED" },
+                { "module": "oid4vp-1final-wallet-alternate-happy-flow", "result": "PASSED" },
+                { "module": "oid4vp-1final-wallet-request-uri-method-post", "result": "SKIPPED" },
+                { "module": "oid4vp-1final-wallet-ignores-unusable-encryption-key", "result": "PASSED" },
+                { "module": "oid4vp-1final-wallet-all-mandatory-claims", "result": "PASSED" },
+                { "module": "oid4vp-1final-wallet-fewer-claims-than-available", "result": "PASSED" },
+                { "module": "oid4vp-1final-wallet-optional-credential-set", "result": "PASSED" },
+                { "module": "oid4vp-1final-wallet-no-claims-in-dcql-query", "result": "PASSED" },
+                { "module": "oid4vp-1final-wallet-pid-claims-path-array-index", "result": "PASSED" },
+                { "module": "oid4vp-1final-wallet-pid-claims-path-array-all-elements", "result": "PASSED" },
+                { "module": "oid4vp-1final-wallet-pid-claims-path-object-member", "result": "PASSED" },
+                { "module": "oid4vp-1final-wallet-negative-test-invalid-request-object-signature", "result": "REVIEW" },
+                { "module": "oid4vp-1final-wallet-negative-test-invalid-request-object-typ", "result": "REVIEW" },
+                { "module": "oid4vp-1final-wallet-negative-test-missing-request-object-typ", "result": "REVIEW" },
+                { "module": "oid4vp-1final-wallet-negative-test-mismatched-client-id", "result": "REVIEW" },
+                { "module": "oid4vp-1final-wallet-negative-test-redirect-uri-with-direct-post", "result": "REVIEW" },
+                { "module": "oid4vp-1final-wallet-negative-test-missing-nonce", "result": "REVIEW" },
+                { "module": "oid4vp-1final-wallet-negative-test-invalid-client-id-prefix", "result": "REVIEW" },
+                { "module": "oid4vp-1final-wallet-negative-test-unknown-transaction-data-type", "result": "REVIEW" },
+                { "module": "oid4vp-1final-wallet-negative-test-required-non-matching-credential", "result": "PASSED" },
+                { "module": "oid4vp-1final-wallet-negative-test-claim-not-in-credential", "result": "REVIEW" }
+            ]
+        }
+    ],
+    "notes": "REVIEW is the negative modules' expected outcome: the wallet correctly refused each invalid request (each refusal reason verified in the flow detail), and the suite's placeholder — the tester's screenshot evidence, uploaded through /api/log/{id}/images/{placeholder} — completed them. request-uri-method-post is SKIPPED by the suite. What this run proves beyond the plain-plan runs (2026-11-04): the x509_hash client_id scheme (OpenID4VP 1.0 §5.2.3 — the base64url SHA-256 over the request object's x5c leaf certificate, checked by the engine in constant time), the HAIP credential form (the PID's JWS header carries its X.509 chain, HAIP-6.1.1, chaining to the profile's configured trust anchor), and the DCQL path forms over the typed fixture claims (array index, array all-elements, object member). Reproduce with: make wasm-page in siros-wallet-core, then WALLET_PAGE_DIR=<…>/target/wasm-page make test-mini-wallet-vp."
+}

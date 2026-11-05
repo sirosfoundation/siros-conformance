@@ -17,7 +17,9 @@ const MINI_WALLET_URL = 'http://localhost:3010/';
 const VP_PLAN_NAME = process.env.VP_PLAN_NAME || 'oid4vp-1final-wallet-test-plan';
 const VP_CONFIG_PATH = path.resolve(
   __dirname,
-  '../../configs/conformance/vp-wallet-config.json'
+  `../../configs/conformance/${
+    process.env.VP_PROFILE === 'haip' ? 'vp-wallet-haip-config.json' : 'vp-wallet-config.json'
+  }`
 );
 const VP_MODULE = process.env.VP_MODULE || 'oid4vp-1final-wallet-happy-flow';
 
@@ -43,19 +45,38 @@ test('drive one OID4VP module through the mini-wallet page', async ({ page }) =>
   const api = new ConformanceAPI(CONFORMANCE_URL);
   await api.waitForServerReady(30000);
 
-  const config = JSON.parse(fs.readFileSync(VP_CONFIG_PATH, 'utf8'));
-  // The haip profile runs its own plan.
+  const config = JSON.parse(
+    fs.readFileSync(
+      process.env.VP_PROFILE === 'haip'
+        ? path.resolve(__dirname, '../../configs/conformance/vp-wallet-haip-config.json')
+        : VP_CONFIG_PATH,
+      'utf8'
+    )
+  );
+  // The haip profile runs its own plan, with its own variant axes: the
+  // credential format and type, and the response mode (direct_post.jwt —
+  // the JARM HTTP POST — or dc_api.jwt, the W3C Digital Credentials API
+  // browser flow). The plain plan's axes (client_id_prefix, request_method,
+  // vp_profile) do not apply.
   const planName =
     process.env.VP_PROFILE === 'haip'
       ? 'oid4vp-1final-wallet-haip-test-plan'
       : VP_PLAN_NAME;
-  const plan = await api.createTestPlan(planName, JSON.stringify(config), {
-    credential_format: 'sd_jwt_vc',
-    client_id_prefix: process.env.VP_CLIENT_ID_PREFIX || 'x509_san_dns',
-    response_mode: process.env.VP_RESPONSE_MODE || 'direct_post',
-    request_method: 'request_uri_signed',
-    vp_profile: process.env.VP_PROFILE || 'plain_vp',
-  });
+  const variant: Record<string, string> =
+    process.env.VP_PROFILE === 'haip'
+      ? {
+          credential_format: process.env.VCI_FORMAT || 'sd_jwt_vc',
+          credential_type: process.env.VP_CREDENTIAL_TYPE || 'eudi_pid',
+          response_mode: process.env.VP_RESPONSE_MODE || 'direct_post.jwt',
+        }
+      : {
+          credential_format: 'sd_jwt_vc',
+          client_id_prefix: process.env.VP_CLIENT_ID_PREFIX || 'x509_san_dns',
+          response_mode: process.env.VP_RESPONSE_MODE || 'direct_post',
+          request_method: 'request_uri_signed',
+          vp_profile: process.env.VP_PROFILE || 'plain_vp',
+        };
+  const plan = await api.createTestPlan(planName, JSON.stringify(config), variant);
   console.log('PLAN', plan.id);
 
   const moduleInfo = await api.createTestFromPlan(plan.id, VP_MODULE);
@@ -89,6 +110,31 @@ test('drive one OID4VP module through the mini-wallet page', async ({ page }) =>
     }
   }
   console.log('INTERACTION URL:', (interactionUrl || '').slice(0, 160));
+
+  // The request object, fetched from the request_uri while the module
+  // is WAITING — the wire shape the engine must parse.
+  if (interactionUrl) {
+    const requestUri = new URLSearchParams(interactionUrl.replace('openid4vp://?', ''))
+      .get('request_uri');
+    if (requestUri) {
+      const resp = await fetch(requestUri, { }).catch((e: any) => ({ error: String(e) }));
+      if (resp && typeof (resp as any).text === 'function') {
+        const jwt = (await (resp as any).text()).trim();
+        const [header, payload] = jwt.split('.');
+        const dec = (s: string) => {
+          const pad = '='.repeat((-s.length) % 4);
+          return Buffer.from(s.replace(/-/g, '+').replace(/_/g, '/') + pad, 'base64').toString();
+        };
+        try {
+          console.log('REQUEST OBJECT HEADER:', JSON.stringify(JSON.parse(dec(header)), null, 1).slice(0, 900));
+          console.log('REQUEST OBJECT PAYLOAD:', JSON.stringify(JSON.parse(dec(payload)), null, 1).slice(0, 1500));
+        } catch {
+          console.log('REQUEST OBJECT (raw):', jwt.slice(0, 300));
+        }
+        fs.writeFileSync('/tmp/opencode/haip-request.jwt', jwt);
+      }
+    }
+  }
 
   await page.goto(`${MINI_WALLET_URL}?request=${encodeURIComponent(interactionUrl || '')}`, {
     waitUntil: 'domcontentloaded',

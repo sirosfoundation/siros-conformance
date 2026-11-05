@@ -1,6 +1,6 @@
 .PHONY: install up-issuer up-verifier up-verifier-core up-wallet up-android up-mini-wallet down test-issuer test-verifier test-verifier-core \
 	test-wallet test-wallet-vci test-wallet-vp \
-	test-mini-wallet test-mini-wallet-vci \
+	test-mini-wallet test-mini-wallet-vci test-mini-wallet-vp \
 	test-android test-android-vci test-android-vp
 
 COMPOSE := docker compose
@@ -63,11 +63,13 @@ test-wallet: test-wallet-vci test-wallet-vp
 
 # The raw engine against the OIDF plans: the mini-wallet spec drives the
 # page by the same URL contract the wallet specs use.
-test-mini-wallet:
-	NODE_TLS_REJECT_UNAUTHORIZED=0 npx playwright test specs/conformance/mini-wallet.spec.ts
+test-mini-wallet: test-mini-wallet-vci test-mini-wallet-vp
 
 test-mini-wallet-vci:
-	NODE_TLS_REJECT_UNAUTHORIZED=0 npx playwright test specs/conformance/mini-wallet.spec.ts --grep "oid4vci"
+	NODE_TLS_REJECT_UNAUTHORIZED=0 npx playwright test specs/conformance/mini-wallet.spec.ts
+
+test-mini-wallet-vp:
+	NODE_TLS_REJECT_UNAUTHORIZED=0 npx playwright test specs/conformance/mini-wallet-vp.spec.ts
 
 # ── Android wallet tests (via ADB / Waydroid) ───────────────────────────────
 up-android:

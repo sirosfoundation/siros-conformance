@@ -29,8 +29,28 @@ const VP_CONFIG_PATH = path.resolve(
   __dirname,
   '../../configs/conformance/vp-wallet-config.json'
 );
+// The HAIP profile runs its own plan (oid4vp-1final-wallet-haip-test-plan)
+// with its own variant axes (credential_format, credential_type,
+// response_mode) and its own trust material: the profile's
+// `credential.trust_anchor_pem` (HAIP-6.1), which the mini wallet's
+// x5c-chained PID (HAIP-6.1.1) chains to — the fixtures under
+// fixtures/mini-wallet-pki.
+const HAIP_PLAN_NAME = 'oid4vp-1final-wallet-haip-test-plan';
+const HAIP_CONFIG_PATH = path.resolve(
+  __dirname,
+  '../../configs/conformance/vp-wallet-haip-config.json'
+);
 
-const VARIANTS = [
+/// One variant to run: the plan-level variant axes, and — for the
+/// profiles that run their own plan — the plan name and the config.
+interface VariantConfig {
+  name: string;
+  variant: Record<string, string>;
+  planName?: string;
+  configPath?: string;
+}
+
+const VARIANTS: VariantConfig[] = [
   {
     name: 'sd_jwt_vc / x509_san_dns / direct_post / request_uri_signed / plain_vp',
     variant: {
@@ -49,6 +69,18 @@ const VARIANTS = [
       response_mode: 'direct_post.jwt',
       request_method: 'request_uri_signed',
       vp_profile: 'plain_vp',
+    },
+  },
+  {
+    // The HAIP profile (§1.1 of the HAIP spec): the x509_hash client_id
+    // scheme, the x5c-chained credential, the JARM response.
+    name: 'sd_jwt_vc / eudi_pid / haip / direct_post.jwt',
+    planName: HAIP_PLAN_NAME,
+    configPath: HAIP_CONFIG_PATH,
+    variant: {
+      credential_format: 'sd_jwt_vc',
+      credential_type: 'eudi_pid',
+      response_mode: 'direct_post.jwt',
     },
   },
 ];
@@ -76,9 +108,11 @@ test.describe('Mini-wallet (the raw Rust engine core) — OID4VP', () => {
       test('should pass all VP conformance modules against the raw engine', async ({ page }) => {
         test.setTimeout(1_200_000);
 
-        const config = JSON.parse(fs.readFileSync(VP_CONFIG_PATH, 'utf8'));
+        const config = JSON.parse(
+          fs.readFileSync(variantConfig.configPath ?? VP_CONFIG_PATH, 'utf8')
+        );
         const plan = await api.createTestPlan(
-          VP_PLAN_NAME,
+          variantConfig.planName ?? VP_PLAN_NAME,
           JSON.stringify(config),
           variantConfig.variant
         );

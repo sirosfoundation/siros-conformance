@@ -1,0 +1,56 @@
+{
+  "alias": "siros-wallet-vp-test",
+  "description": "OID4VP wallet conformance test for SIROS wallet",
+  "server": {
+    "authorization_endpoint": "openid4vp://"
+  },
+  "client": {
+    "client_id": "conformance.example.com",
+    "jwks": {
+      "keys": [
+        {
+          "kty": "EC",
+          "crv": "P-256",
+          "x": "HPtEYEEQNGcOGGtQXnm8VbbryWYOF7dlmTKcDwIxk60",
+          "y": "Knv02968XSiEmNSoGPaHX3LXl-boQztsK0DB46VhE68",
+          "d": "Z8iB5ltQ0Yf8Wyyafbmypw49VKegZLn2BBjzFzhMHGU",
+          "kid": "vp-verifier-key-1",
+          "use": "sig",
+          "alg": "ES256",
+          "x5c": [
+            "MIIBvjCCAWOgAwIBAgIUfw4in2xbbaO4BRVzCMJ9jcx+MYUwCgYIKoZIzj0EAwIwIjEgMB4GA1UEAwwXY29uZm9ybWFuY2UuZXhhbXBsZS5jb20wHhcNMjYwNTE1MDc1MzQ1WhcNMjcwNTE1MDc1MzQ1WjAiMSAwHgYDVQQDDBdjb25mb3JtYW5jZS5leGFtcGxlLmNvbTBZMBMGByqGSM49AgEGCCqGSM49AwEHA0IABBz7RGBBEDRnDhhrUF55vFW268lmDhe3ZZkynA8CMZOtKnv02968XSiEmNSoGPaHX3LXl+boQztsK0DB46VhE6+jdzB1MB0GA1UdDgQWBBR/zA7h3+ikKBoa3jyMiSX7sFdkyzAfBgNVHSMEGDAWgBR/zA7h3+ikKBoa3jyMiSX7sFdkyzAPBgNVHRMBAf8EBTADAQH/MCIGA1UdEQQbMBmCF2NvbmZvcm1hbmNlLmV4YW1wbGUuY29tMAoGCCqGSM49BAMCA0kAMEYCIQC4lhxwiQy3+GPtzdQW9IlDSrQoEnncom6YsKZ3izHuIgIhAKZIjNYWTG0xIpFrS4DVkvo1qiV9kNf1Qvp8StOW6pEr"
+          ]
+        }
+      ]
+    },
+    "dcql": {
+      "credentials": [
+        {
+          "id": "eudi_pid",
+          "format": "dc+sd-jwt",
+          "meta": {
+            "vct_values": [
+              "urn:eudi:pid:1"
+            ]
+          },
+          "claims": [
+            {
+              "path": [
+                "given_name"
+              ]
+            },
+            {
+              "path": [
+                "family_name"
+              ]
+            }
+          ]
+        }
+      ]
+    }
+  },
+  "credential": {
+    "trust_anchor_pem": "-----BEGIN CERTIFICATE-----\nMIID+zCCAuOgAwIBAgIUSciQpA/tgPL1eXo18c5HzwZj5AAwDQYJKoZIhvcNAQEL\nBQAwgYQxCzAJBgNVBAYTAlNFMQ0wCwYDVQQIDARUZXN0MRUwEwYDVQQHDAxNaW5p\nIFRlc3RpbmcxGTAXBgNVBAoMEE1pbmkgV2FsbGV0IFRlc3QxETAPBgNVBAsMCFRl\nc3QgUEtJMSEwHwYDVQQDDBhNaW5pIFdhbGxldCBUZXN0IFJvb3QgQ0EwHhcNMjYx\nMTA1MDk0MjA5WhcNMzYxMTAyMDk0MjA5WjCBhDELMAkGA1UEBhMCU0UxDTALBgNV\nBAgMBFRlc3QxFTATBgNVBAcMDE1pbmkgVGVzdGluZzEZMBcGA1UECgwQTWluaSBX\nYWxsZXQgVGVzdDERMA8GA1UECwwIVGVzdCBQS0kxITAfBgNVBAMMGE1pbmkgV2Fs\nbGV0IFRlc3QgUm9vdCBDQTCCASIwDQYJKoZIhvcNAQEBBQADggEPADCCAQoCggEB\nAI9Ow9MwJzw258C467SxtzIoPo2lCD9l3lF3Bdlxakatytuyeaio7nn9iWhQgZ0V\n9mlGhbRv77Svkty77quwi2C1DdHEE2mJ0h46TD3ewYbEQiJ6LbD7m7nM4Ll1XYMj\npyyxkeScbY7kdVHUPHVX9eBqgVn8rhiNU6H0XYJjUwzpo8cCBAxdNHvEIIfBw1x3\njp5YzAk3Zz3VrHCo8FhpqExHG4i4pjYYKKLrWEitlL46eOokQjFcuEAAt/KQKQY7\nzcp/A27L4AHGNJy8hgrsKCDc9l1sPTS2SN3NhLCWVdqNbNF5zOmnKWMbvH/foBk7\noCu/h1GW/+8rVOxxsS7gh50CAwEAAaNjMGEwDwYDVR0TAQH/BAUwAwEB/zAOBgNV\nHQ8BAf8EBAMCAQYwHQYDVR0OBBYEFA1YMgO8K7TpOIQsKkFxjP4KAJJfMB8GA1Ud\nIwQYMBaAFA1YMgO8K7TpOIQsKkFxjP4KAJJfMA0GCSqGSIb3DQEBCwUAA4IBAQBa\nq1kBSaYKb8mi+vmRax4YrqSyL/Pmw4r7TXFzcg8xkhojITe6PBlCCcIejEepmRvo\n3giIejVRqTbFq9VL7Sx0mzcTjc1yiMCyOYZ5Cm9EUuCFyLXNPvFQzo1IviJPIdVM\nKd0IztduRWEd1PG4ngKNsuQGy8RDs8CcrhIj2Anqlx4iJYzK8BndSyPdPu1Ejq/q\ndL+MmW1jyQp3V8HgZTlyZHROGWTSFGMApIlU6e+K+uhaLrPwfN3pfk+OSaa9KjMQ\nXGvY5Wnp+VFX0nalUI/My2aRPbkl9laa/Z81nKIiwvvI3IU5onU+OVnljIQUuIjw\n7RU6DY2QWQc+jPtzS931\n-----END CERTIFICATE-----\n",
+    "status_list_trust_anchor_pem": "-----BEGIN CERTIFICATE-----\nMIID+zCCAuOgAwIBAgIUSciQpA/tgPL1eXo18c5HzwZj5AAwDQYJKoZIhvcNAQEL\nBQAwgYQxCzAJBgNVBAYTAlNFMQ0wCwYDVQQIDARUZXN0MRUwEwYDVQQHDAxNaW5p\nIFRlc3RpbmcxGTAXBgNVBAoMEE1pbmkgV2FsbGV0IFRlc3QxETAPBgNVBAsMCFRl\nc3QgUEtJMSEwHwYDVQQDDBhNaW5pIFdhbGxldCBUZXN0IFJvb3QgQ0EwHhcNMjYx\nMTA1MDk0MjA5WhcNMzYxMTAyMDk0MjA5WjCBhDELMAkGA1UEBhMCU0UxDTALBgNV\nBAgMBFRlc3QxFTATBgNVBAcMDE1pbmkgVGVzdGluZzEZMBcGA1UECgwQTWluaSBX\nYWxsZXQgVGVzdDERMA8GA1UECwwIVGVzdCBQS0kxITAfBgNVBAMMGE1pbmkgV2Fs\nbGV0IFRlc3QgUm9vdCBDQTCCASIwDQYJKoZIhvcNAQEBBQADggEPADCCAQoCggEB\nAI9Ow9MwJzw258C467SxtzIoPo2lCD9l3lF3Bdlxakatytuyeaio7nn9iWhQgZ0V\n9mlGhbRv77Svkty77quwi2C1DdHEE2mJ0h46TD3ewYbEQiJ6LbD7m7nM4Ll1XYMj\npyyxkeScbY7kdVHUPHVX9eBqgVn8rhiNU6H0XYJjUwzpo8cCBAxdNHvEIIfBw1x3\njp5YzAk3Zz3VrHCo8FhpqExHG4i4pjYYKKLrWEitlL46eOokQjFcuEAAt/KQKQY7\nzcp/A27L4AHGNJy8hgrsKCDc9l1sPTS2SN3NhLCWVdqNbNF5zOmnKWMbvH/foBk7\noCu/h1GW/+8rVOxxsS7gh50CAwEAAaNjMGEwDwYDVR0TAQH/BAUwAwEB/zAOBgNV\nHQ8BAf8EBAMCAQYwHQYDVR0OBBYEFA1YMgO8K7TpOIQsKkFxjP4KAJJfMB8GA1Ud\nIwQYMBaAFA1YMgO8K7TpOIQsKkFxjP4KAJJfMA0GCSqGSIb3DQEBCwUAA4IBAQBa\nq1kBSaYKb8mi+vmRax4YrqSyL/Pmw4r7TXFzcg8xkhojITe6PBlCCcIejEepmRvo\n3giIejVRqTbFq9VL7Sx0mzcTjc1yiMCyOYZ5Cm9EUuCFyLXNPvFQzo1IviJPIdVM\nKd0IztduRWEd1PG4ngKNsuQGy8RDs8CcrhIj2Anqlx4iJYzK8BndSyPdPu1Ejq/q\ndL+MmW1jyQp3V8HgZTlyZHROGWTSFGMApIlU6e+K+uhaLrPwfN3pfk+OSaa9KjMQ\nXGvY5Wnp+VFX0nalUI/My2aRPbkl9laa/Z81nKIiwvvI3IU5onU+OVnljIQUuIjw\n7RU6DY2QWQc+jPtzS931\n-----END CERTIFICATE-----\n"
+  }
+}
