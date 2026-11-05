@@ -46,9 +46,11 @@ const VCI_CONFIG_PATH = path.resolve(
   '../../configs/conformance/vci-wallet-config.json'
 );
 
-// The pre-authorized variants: the issuance half the raw engine answers
-// through the mini host today (no sender constrain, no client auth —
-// the proof is the self-asserted device key's).
+// The variants: both grants the suite's OID4VCI wallet plan exercises.
+// The pre-authorized code answers in one WMP call; the authorization
+// code spans two — the start pushes PAR and hands the authorization
+// URL over, the redirect returns with ?code&state, and the page reload
+// resumes through the KV-persisted stash (the stateless resume).
 const VARIANTS = [
   {
     name: 'sd_jwt_vc / pre-authorized_code / immediate',
@@ -71,6 +73,38 @@ const VARIANTS = [
     variant: {
       credential_format: 'sd_jwt_vc',
       vci_grant_type: 'pre_authorization_code',
+      vci_credential_issuance_mode: 'deferred',
+      vci_credential_offer_variant: 'by_value',
+      sender_constrain: 'dpop',
+      vci_credential_encryption: 'plain',
+      fapi_profile: 'vci',
+      fapi_request_method: 'unsigned',
+      client_auth_type: 'private_key_jwt',
+      authorization_request_type: 'simple',
+      vci_authorization_code_flow_variant: 'issuer_initiated',
+    },
+  },
+  {
+    name: 'sd_jwt_vc / authorization_code / immediate',
+    variant: {
+      credential_format: 'sd_jwt_vc',
+      vci_grant_type: 'authorization_code',
+      vci_credential_issuance_mode: 'immediate',
+      vci_credential_offer_variant: 'by_value',
+      sender_constrain: 'dpop',
+      vci_credential_encryption: 'plain',
+      fapi_profile: 'vci',
+      fapi_request_method: 'unsigned',
+      client_auth_type: 'private_key_jwt',
+      authorization_request_type: 'simple',
+      vci_authorization_code_flow_variant: 'issuer_initiated',
+    },
+  },
+  {
+    name: 'sd_jwt_vc / authorization_code / deferred',
+    variant: {
+      credential_format: 'sd_jwt_vc',
+      vci_grant_type: 'authorization_code',
       vci_credential_issuance_mode: 'deferred',
       vci_credential_offer_variant: 'by_value',
       sender_constrain: 'dpop',
@@ -116,6 +150,12 @@ test.describe('Mini-wallet (the raw Rust engine core) — OID4VCI', () => {
         if (process.env.GITHUB_SHA) {
           config.description = `${config.description || ''} [mini-wallet ${process.env.GITHUB_SHA.slice(0, 7)}]`.trim();
         }
+        // The plan config's redirect_uri is wallet-frontend's /cb; the
+        // mini-wallet page is its own redirect target — the AS sends the
+        // code back to the page, and the load handler resumes the flow
+        // from ?code and ?state (the stateless resume over the KV port).
+        config.client = config.client || {};
+        config.client.redirect_uri = `${MINI_WALLET_URL}`;
         const configJson = JSON.stringify(config);
 
         const plan = await api.createTestPlan(VCI_PLAN_NAME, configJson, variantConfig.variant);
