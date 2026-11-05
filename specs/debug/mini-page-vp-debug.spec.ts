@@ -15,12 +15,14 @@ import { ConformanceAPI } from '../../helpers/conformance-api';
 const CONFORMANCE_URL = 'https://localhost.emobix.co.uk:8443/';
 const MINI_WALLET_URL = 'http://localhost:3010/';
 const VP_PLAN_NAME = process.env.VP_PLAN_NAME || 'oid4vp-1final-wallet-test-plan';
-const VP_CONFIG_PATH = path.resolve(
-  __dirname,
-  `../../configs/conformance/${
-    process.env.VP_PROFILE === 'haip' ? 'vp-wallet-haip-config.json' : 'vp-wallet-config.json'
-  }`
-);
+// The config: the mdoc one when the format asks for it
+// (vp-wallet-mdoc-config.json — the mso_mdoc DCQL), else the profile's.
+const VP_CONFIG_FILE =
+  process.env.VP_CONFIG ||
+  (process.env.VP_PROFILE === 'haip'
+    ? 'vp-wallet-haip-config.json'
+    : 'vp-wallet-config.json');
+const VP_CONFIG_PATH = path.resolve(__dirname, `../../configs/conformance/${VP_CONFIG_FILE}`);
 const VP_MODULE = process.env.VP_MODULE || 'oid4vp-1final-wallet-happy-flow';
 
 test('drive one OID4VP module through the mini-wallet page', async ({ page }) => {
@@ -41,18 +43,16 @@ test('drive one OID4VP module through the mini-wallet page', async ({ page }) =>
       console.log('SUITE RESP:', resp.status(), resp.url().replace('https://localhost.emobix.co.uk:8443', '').slice(0, 120));
     }
   });
+  page.on('request', (req) => {
+    if (req.url().includes('responseuri') && req.method() === 'POST') {
+      console.log('VP POST BODY:', (req.postData() || '').slice(0, 4000));
+    }
+  });
 
   const api = new ConformanceAPI(CONFORMANCE_URL);
   await api.waitForServerReady(30000);
 
-  const config = JSON.parse(
-    fs.readFileSync(
-      process.env.VP_PROFILE === 'haip'
-        ? path.resolve(__dirname, '../../configs/conformance/vp-wallet-haip-config.json')
-        : VP_CONFIG_PATH,
-      'utf8'
-    )
-  );
+  const config = JSON.parse(fs.readFileSync(VP_CONFIG_PATH, 'utf8'));
   // The haip profile runs its own plan, with its own variant axes: the
   // credential format and type, and the response mode (direct_post.jwt —
   // the JARM HTTP POST — or dc_api.jwt, the W3C Digital Credentials API
@@ -70,7 +70,7 @@ test('drive one OID4VP module through the mini-wallet page', async ({ page }) =>
           response_mode: process.env.VP_RESPONSE_MODE || 'direct_post.jwt',
         }
       : {
-          credential_format: 'sd_jwt_vc',
+          credential_format: process.env.VCI_FORMAT || 'sd_jwt_vc',
           client_id_prefix: process.env.VP_CLIENT_ID_PREFIX || 'x509_san_dns',
           response_mode: process.env.VP_RESPONSE_MODE || 'direct_post',
           request_method: 'request_uri_signed',
@@ -190,6 +190,10 @@ test('drive one OID4VP module through the mini-wallet page', async ({ page }) =>
   for (const f of failures) {
     if (seen.has(f.msg)) continue;
     seen.add(f.msg);
-    console.log('FAIL:', JSON.stringify(f).slice(0, 500));
+    console.log('FAIL:', JSON.stringify(f).slice(0, 30000));
+  }
+  const warnings = (log as any[]).filter((e: any) => String(e.result).toUpperCase().includes('WARN'));
+  for (const w of warnings) {
+    console.log('WARN:', JSON.stringify(w).slice(0, 2000));
   }
 });

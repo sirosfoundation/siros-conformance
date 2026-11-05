@@ -1,0 +1,50 @@
+{
+    "run": "mini-wallet-vp-mdoc — the OID4VP plan's iso_mdl variant against the raw Rust engine",
+    "date": "2026-11-05",
+    "suite": {
+        "url": "https://localhost.emobix.co.uk:8443/",
+        "version": "5.3.4",
+        "plan": "oid4vp-1final-wallet-test-plan",
+        "alias": "siros-wallet-vp-mdoc-test"
+    },
+    "wallet": {
+        "harness": "engine-adapter-wasm's mini-wallet page (target/wasm-page)",
+        "engine": "siros-wallet-core",
+        "engine_commit": "uncommitted (the mdoc device response)",
+        "profile": "mini-wallet with the mdoc fixtures: the mDL held as an mso_mdoc, the device key bound as its MSO's deviceKey, the ISO 18013-5 profile DS certificate (fixtures/mini-wallet-pki) chaining to the same test root as the SD-JWT PID's issuer"
+    },
+    "variant": {
+        "credential_format": "iso_mdl",
+        "client_id_prefix": "x509_san_dns",
+        "response_mode": "direct_post",
+        "request_method": "request_uri_signed",
+        "vp_profile": "plain_vp"
+    },
+    "plans": [
+        {
+            "variant": "iso_mdl / x509_san_dns / direct_post / request_uri_signed / plain_vp",
+            "plan_id": "OzBNWDaDeiAn7",
+            "plan_detail": "https://localhost.emobix.co.uk:8443/plan-detail.html?log=OzBNWDaDeiAn7",
+            "report": "conformance-report-OzBNWDaDeiAn7.zip",
+            "modules": [
+                { "module": "oid4vp-1final-wallet-happy-flow", "result": "PASSED" },
+                { "module": "oid4vp-1final-wallet-alternate-happy-flow", "result": "PASSED" },
+                { "module": "oid4vp-1final-wallet-request-uri-method-post", "result": "SKIPPED" },
+                { "module": "oid4vp-1final-wallet-fewer-claims-than-available", "result": "PASSED" },
+                { "module": "oid4vp-1final-wallet-optional-credential-set", "result": "PASSED" },
+                { "module": "oid4vp-1final-wallet-no-claims-in-dcql-query", "result": "PASSED" },
+                { "module": "oid4vp-1final-wallet-negative-test-invalid-request-object-signature", "result": "REVIEW" },
+                { "module": "oid4vp-1final-wallet-negative-test-invalid-request-object-typ", "result": "REVIEW" },
+                { "module": "oid4vp-1final-wallet-negative-test-missing-request-object-typ", "result": "REVIEW" },
+                { "module": "oid4vp-1final-wallet-negative-test-mismatched-client-id", "result": "REVIEW" },
+                { "module": "oid4vp-1final-wallet-negative-test-redirect-uri-with-direct-post", "result": "REVIEW" },
+                { "module": "oid4vp-1final-wallet-negative-test-missing-nonce", "result": "REVIEW" },
+                { "module": "oid4vp-1final-wallet-negative-test-invalid-client-id-prefix", "result": "REVIEW" },
+                { "module": "oid4vp-1final-wallet-negative-test-unknown-transaction-data-type", "result": "REVIEW" },
+                { "module": "oid4vp-1final-wallet-negative-test-required-non-matching-credential", "result": "PASSED" },
+                { "module": "oid4vp-1final-wallet-negative-test-claim-not-in-credential", "result": "REVIEW" }
+            ]
+        }
+    ],
+    "notes": "The mdoc presentation path green against the raw engine: the mso_mdoc DCQL query's [namespace, claim] paths select the mDL's IssuerSignedItems, the DeviceResponse carries the issuerAuth as issued and the device key's ES256 signature over the session transcript of the request's OpenID4VPHandover (OpenID4VP 1.0 B.2.6.1). REVIEW is the negative modules' expected outcome (the wallet refused each invalid request; the suite's placeholder evidence completed them); request-uri-method-post is SKIPPED by the suite. The mdoc-specific path modules (pid-claims-path-*) are eudi_pid-specific and not in the iso_mdl plan variant. Reproduce with: make wasm-page in siros-wallet-core, then WALLET_PAGE_DIR=<…>/target/wasm-page make test-mini-wallet-vp."
+}

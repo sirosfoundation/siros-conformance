@@ -83,6 +83,23 @@ const VARIANTS: VariantConfig[] = [
       response_mode: 'direct_post.jwt',
     },
   },
+  {
+    // The mdoc presentation (OpenID4VP 1.0, B.4): the iso_mdl credential
+    // format — the mso_mdoc DCQL query, the DeviceResponse answer — on
+    // the plain plan.
+    name: 'iso_mdl / x509_san_dns / direct_post / request_uri_signed / plain_vp',
+    configPath: path.resolve(
+      __dirname,
+      '../../configs/conformance/vp-wallet-mdoc-config.json'
+    ),
+    variant: {
+      credential_format: 'iso_mdl',
+      client_id_prefix: 'x509_san_dns',
+      response_mode: 'direct_post',
+      request_method: 'request_uri_signed',
+      vp_profile: 'plain_vp',
+    },
+  },
 ];
 
 test.describe('Mini-wallet (the raw Rust engine core) — OID4VP', () => {

@@ -30,6 +30,10 @@ services:
       - "3010:80"
     volumes:
       - ${WALLET_PAGE_DIR:-../siros-wallet-core/target/wasm-page}:/usr/share/nginx/html:ro
+      # The CRL the mdoc fixture DS certificate's distribution point
+      # names (compose/mini-wallet-crl.conf) — the suite fetches it
+      # over the network as an mdoc reader would.
+      - ./mini-wallet-crl.conf:/etc/nginx/conf.d/default.conf:ro
     healthcheck:
       test: ["CMD", "wget", "-q", "--spider", "http://localhost:80/"]
       interval: 5s

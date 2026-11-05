@@ -20,13 +20,32 @@ test('drive the whole OID4VP haip plan through the mini-wallet page', async ({ p
   const api = new ConformanceAPI(CONFORMANCE_URL);
   await api.waitForServerReady(30000);
 
-  const configPath = path.resolve(__dirname, '../../configs/conformance/vp-wallet-haip-config.json');
+  // The plan and config: the HAIP profile's own plan by default; the
+  // plain plan with the iso_mdl credential format (VCI_FORMAT=iso_mdl)
+  // drives the mdoc presentation against the mdoc config.
+  const isoMdl = process.env.VCI_FORMAT === 'iso_mdl';
+  const planName = isoMdl
+    ? 'oid4vp-1final-wallet-test-plan'
+    : 'oid4vp-1final-wallet-haip-test-plan';
+  const configPath = path.resolve(
+    __dirname,
+    `../../configs/conformance/${isoMdl ? 'vp-wallet-mdoc-config.json' : 'vp-wallet-haip-config.json'}`
+  );
   const config = JSON.parse(fs.readFileSync(configPath, 'utf8'));
-  const plan = await api.createTestPlan('oid4vp-1final-wallet-haip-test-plan', JSON.stringify(config), {
-    credential_format: process.env.VCI_FORMAT || 'sd_jwt_vc',
-    credential_type: process.env.VP_CREDENTIAL_TYPE || 'eudi_pid',
-    response_mode: process.env.VP_RESPONSE_MODE || 'direct_post.jwt',
-  });
+  const variant: Record<string, string> = isoMdl
+    ? {
+        credential_format: 'iso_mdl',
+        client_id_prefix: process.env.VP_CLIENT_ID_PREFIX || 'x509_san_dns',
+        response_mode: process.env.VP_RESPONSE_MODE || 'direct_post',
+        request_method: 'request_uri_signed',
+        vp_profile: process.env.VP_PROFILE || 'plain_vp',
+      }
+    : {
+        credential_format: process.env.VCI_FORMAT || 'sd_jwt_vc',
+        credential_type: process.env.VP_CREDENTIAL_TYPE || 'eudi_pid',
+        response_mode: process.env.VP_RESPONSE_MODE || 'direct_post.jwt',
+      };
+  const plan = await api.createTestPlan(planName, JSON.stringify(config), variant);
   console.log('PLAN', plan.id);
   const moduleNames = plan.modules.map((m: any) => m.testModule);
   console.log(`MODULES (${moduleNames.length}):`, moduleNames.join(', '));
