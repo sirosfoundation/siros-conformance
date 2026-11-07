@@ -122,6 +122,17 @@ url = "http://go-trust-allow:6001/evaluation"
 as_url = "http://siros-issuer-core-status:8080"
 ingestion_url = "http://siros-issuer-core-status:8080"
 
+# Wallet-surface rate limiting (design §11): vc's production defaults are
+# per-client-per-minute budgets for a real deployment's client
+# distribution; the conformance stack is ONE client (the suite) driving
+# a full variant in under a minute — the defaults trip mid-variant
+# (offer budget exhausted across modules). LOCAL TEST ONLY: raised.
+[rate_limit]
+offer_per_minute = 600
+credential_per_minute = 600
+token_per_minute = 600
+challenge_per_minute = 600
+
 [session]
 default_ttl_seconds = 300
 max_ttl_seconds = 3600
