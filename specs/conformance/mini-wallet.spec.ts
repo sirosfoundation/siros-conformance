@@ -40,6 +40,20 @@ import { ConformanceAPI, type TestState } from '../../helpers/conformance-api';
 
 const CONFORMANCE_URL = process.env.CONFORMANCE_URL || 'https://localhost.emobix.co.uk:8443/';
 const MINI_WALLET_URL = process.env.MINI_WALLET_URL || 'http://localhost:3010/';
+
+// The module blacklist (CONFORMANCE_BLACKLIST): a JSON object of module
+// name → reason, checked in by the engine repo's conformance workflow
+// (siros-wallet-core .github/workflows/conformance.yml). A blacklisted
+// module is skipped, not run-and-ignored: the suite's verdict for it is
+// absent from the run, and the summary records the skip with its reason.
+// An unset or empty env runs everything.
+const BLACKLIST: Record<string, string> = (() => {
+  try {
+    return JSON.parse(process.env.CONFORMANCE_BLACKLIST ?? '{}');
+  } catch {
+    return {};
+  }
+})();
 const VCI_PLAN_NAME = 'oid4vci-1_0-wallet-test-plan';
 const VCI_CONFIG_PATH = path.resolve(
   __dirname,
@@ -171,6 +185,16 @@ test.describe('Mini-wallet (the raw Rust engine core) — OID4VCI', () => {
         }> = [];
 
         for (const moduleName of planModules) {
+          if (BLACKLIST[moduleName]) {
+            console.log(`\n[mini-wallet] SKIP ${moduleName}: ${BLACKLIST[moduleName]}`);
+            results.push({
+              module: moduleName,
+              status: 'SKIPPED',
+              result: `blacklisted: ${BLACKLIST[moduleName]}`,
+              passed: true, // a skip is not a failure; the summary carries it
+            });
+            continue;
+          }
           console.log(`\n[mini-wallet] === Module: ${moduleName} ===`);
 
           const moduleInfo = await api.createTestFromPlan(planId, moduleName);
