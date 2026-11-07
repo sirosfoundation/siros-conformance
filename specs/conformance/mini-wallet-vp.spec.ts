@@ -315,6 +315,22 @@ test.describe('Mini-wallet (the raw Rust engine core) — OID4VP', () => {
         }
 
         console.table(results);
+
+        // The plan's exported results (the suite's exporthtml ZIP): the
+        // certification-package form - the same ZIP a "Publish for
+        // certification" submission attaches (the workflow uploads it as a
+        // release-tag artifact, so a release's conformance verdict ships in
+        // the submission's exact format). Best-effort: an export failure
+        // fails nothing that passed.
+        const RESULTS_DIR = process.env.CONFORMANCE_RESULTS_DIR || path.resolve(__dirname, '../../conformance-results');
+        try {
+          fs.mkdirSync(RESULTS_DIR, { recursive: true });
+          const reportPath = await api.exportPlanResults(planId, RESULTS_DIR);
+          console.log(`[mini-wallet] Exported: ${reportPath}`);
+        } catch (error) {
+          console.log(`[mini-wallet] Export failed (non-fatal): ${(error as Error).message}`);
+        }
+
         const failures = results.filter((r) => !r.passed);
         expect(
           failures,
