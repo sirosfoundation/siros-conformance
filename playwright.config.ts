@@ -43,6 +43,13 @@ export default defineConfig({
             '--no-sandbox',
             '--disable-setuid-sandbox',
             '--disable-dev-shm-usage',
+            // issuer-core conformance: the wallet-initiated modules expose
+            // a redirect to the issuer's Docker-network alias
+            // (issuer.conformance.example.com); the browser runs on the
+            // host, which cannot resolve it. MAP it to the published TLS
+            // proxy port. Inert for other specs: the hostname resolves
+            // nowhere else.
+            '--host-resolver-rules=MAP issuer.conformance.example.com 127.0.0.1',
           ],
         },
       },

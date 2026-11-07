@@ -1,0 +1,100 @@
+# siros-issuer-core conformance profile (P2).
+#
+# The core issuer + the Mode A dev portal + go-trust (allow mode). The
+# conformance suite itself comes from conformance-suite.yml; this profile
+# joins the same network.
+#
+# Local-test only configuration:
+#   - go-trust runs --registry always-trusted (fail-open) — never prod.
+#   - The dev portal accepts any username — never deploy it anywhere.
+
+services:
+  siros-issuer-core:
+    image: ${SIROS_ISSUER_CORE_IMAGE:-siros-issuer-core:local}
+    container_name: siros-issuer-core
+    ports:
+      - "9016:8080"
+    volumes:
+      - ../fixtures/siros-issuer-core/config.toml:/etc/siros-issuer/config.toml:ro
+      - ../fixtures/siros-issuer-core/signing.jwk:/etc/siros-issuer/signing.jwk:ro
+      - ../fixtures/siros-issuer-core/signing-cert.pem:/etc/siros-issuer/signing-cert.pem:ro
+      - ../fixtures/siros-issuer-core/request-encryption.jwk:/etc/siros-issuer/request-encryption.jwk:ro
+      - ../fixtures/siros-issuer-core/ts11:/etc/siros-issuer/ts11:ro
+      - ../fixtures/siros-issuer-core/zkcircuits:/etc/siros-issuer/zkcircuits:ro
+    environment:
+      - RUST_LOG=info
+    healthcheck:
+      test: ["CMD", "curl", "-sf", "http://localhost:8080/healthz"]
+      interval: 5s
+      timeout: 5s
+      retries: 20
+      start_period: 10s
+    networks:
+      - conformance-network
+
+  siros-issuer-core-portal:
+    image: node:22-slim
+    container_name: siros-issuer-core-portal
+    ports:
+      - "9017:8080"
+    working_dir: /app
+    volumes:
+      - ..:/app
+      - ../fixtures/siros-issuer-core/integrator.jwk:/etc/siros-issuer-portal/integrator.jwk:ro
+    environment:
+      - ISSUER_URL=https://issuer.conformance.example.com:9443
+      - ISSUER_INTERNAL_URL=http://siros-issuer-core:8080
+      - PORTAL_BIND=0.0.0.0:8080
+      - INTEGRATOR_JWK_PATH=/etc/siros-issuer-portal/integrator.jwk
+    command: ["node", "fixtures/siros-issuer-core/portal.mjs"]
+    depends_on:
+      siros-issuer-core:
+        condition: service_healthy
+    networks:
+      - conformance-network
+
+  # LOCAL-TEST-ONLY status-list stub (see fixtures/siros-issuer-core/
+  # status-stub.mjs): exists only for the upstream StatusListToken kid
+  # issue — sirosfoundation/siros-status-service#20. Delete when fixed.
+  siros-issuer-core-status:
+    image: node:22-slim
+    container_name: siros-issuer-core-status
+    working_dir: /app
+    volumes:
+      - ..:/app
+    environment:
+      - STATUS_BIND=0.0.0.0:8080
+      - STATUS_BASE_URL=https://issuer.conformance.example.com:9443/status
+    command: ["node", "fixtures/siros-issuer-core/status-stub.mjs"]
+    depends_on:
+      siros-issuer-core:
+        condition: service_healthy
+    networks:
+      - conformance-network
+
+  # TLS terminator: the suite requires HTTPS issuer endpoints (its
+  # Java truststore contains the conformance CA that signed our cert).
+  siros-issuer-core-nginx:
+    image: nginx:1.29-alpine
+    container_name: siros-issuer-core-nginx
+    # Published on the same port the compose network uses, so the host
+    # browser (wallet-initiated Mode A flows) and the suite resolve the
+    # issuer URL identically: https://issuer.conformance.example.com:9443.
+    ports:
+      - "9443:9443"
+    volumes:
+      - ../fixtures/siros-issuer-core/nginx.conf:/etc/nginx/nginx.conf:ro
+      - ../fixtures/siros-issuer-core/issuer-tls.crt:/etc/nginx/tls.crt:ro
+      - ../fixtures/siros-issuer-core/issuer-tls.key:/etc/nginx/tls.key:ro
+      - ../fixtures/siros-issuer-core/ca.crl:/etc/nginx/crl/ca.crl:ro
+    depends_on:
+      siros-issuer-core:
+        condition: service_healthy
+    networks:
+      conformance-network:
+        aliases:
+          - issuer.conformance.example.com
+
+networks:
+  conformance-network:
+    driver: bridge

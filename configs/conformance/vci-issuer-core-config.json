@@ -1,0 +1,69 @@
+{
+  "alias": "siros-issuer-core-vci-test",
+  "description": "OID4VCI issuer conformance test for siros-issuer-core",
+  "vci": {
+    "credential_issuer_url": "${ISSUER_DISCOVERY_URL}",
+    "credential_configuration_id": "${CREDENTIAL_CONFIGURATION_ID}",
+    "static_tx_code": "123456",
+    "key_attestation_jwks": ${KEY_ATTESTATION_JWKS}
+  },
+  "client": {
+    "client_id": "e2e-test-client",
+    "scope": "${CLIENT_SCOPE}",
+    "redirect_uri": "http://localhost:3000/cb",
+    "jwks": {
+      "keys": [
+        {
+          "kty": "EC",
+          "x": "ktT77AqMntawPyU772lBg8nd7cwENrYyOL_KWbYN8Jc",
+          "y": "67lPXEq5gJdimDYD0AacxLfRfIm2-fSNd3HBqyXXvBI",
+          "crv": "P-256",
+          "d": "KJEKZo2PQq6E40P6HMenViCVBRXoWD2FDyevRsJnlG0",
+          "kid": "client-key-1",
+          "use": "sig",
+          "alg": "ES256"
+        }
+      ]
+    },
+    "private_key": {
+      "kty": "EC",
+      "x": "ktT77AqMntawPyU772lBg8nd7cwENrYyOL_KWbYN8Jc",
+      "y": "67lPXEq5gJdimDYD0AacxLfRfIm2-fSNd3HBqyXXvBI",
+      "crv": "P-256",
+      "d": "KJEKZo2PQq6E40P6HMenViCVBRXoWD2FDyevRsJnlG0",
+      "kid": "client-key-1",
+      "use": "sig",
+      "alg": "ES256"
+    }
+  },
+  "client2": {
+    "client_id": "e2e-test-client-2",
+    "scope": "${CLIENT_SCOPE}",
+    "redirect_uri": "http://localhost:3000/cb",
+    "jwks": {
+      "keys": [
+        {
+          "kty": "EC",
+          "x": "_MUU-7kbV7WJXhrXJuDaAhHKqvDBHq-a4NH1ekAqo8I",
+          "y": "7JpnjHEJoyGLdjw_HkNBI9KU7CsswTrDTb7RSmLZ5m0",
+          "crv": "P-256",
+          "d": "SZK0jDoqr-5R3zqMGVq7DY2tLozo7mPxEKmOkN9TNWE",
+          "kid": "client-key-2",
+          "alg": "ES256",
+          "use": "sig"
+        }
+      ]
+    },
+    "private_key": {
+      "kty": "EC",
+      "x": "_MUU-7kbV7WJXhrXJuDaAhHKqvDBHq-a4NH1ekAqo8I",
+      "y": "7JpnjHEJoyGLdjw_HkNBI9KU7CsswTrDTb7RSmLZ5m0",
+      "crv": "P-256",
+      "d": "SZK0jDoqr-5R3zqMGVq7DY2tLozo7mPxEKmOkN9TNWE",
+      "kid": "client-key-2",
+      "alg": "ES256",
+      "use": "sig"
+    }
+  },
+  "waitTimeoutSeconds": 120
+}

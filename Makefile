@@ -1,9 +1,10 @@
-.PHONY: install up-issuer up-verifier up-verifier-core up-wallet up-android up-mini-wallet down test-issuer test-verifier test-verifier-core \
+.PHONY: install up-issuer up-verifier up-verifier-core up-issuer-core up-wallet up-android up-mini-wallet down test-issuer test-verifier test-verifier-core test-issuer-core \
 	test-wallet test-wallet-vci test-wallet-vp \
 	test-mini-wallet test-mini-wallet-vci test-mini-wallet-vp \
 	test-android test-android-vci test-android-vp
 
 COMPOSE := docker compose
+ISSUER_CORE := -f compose/siros-issuer-core.yml
 CONFORMANCE := -f compose/conformance-suite.yml
 VC_SERVICES := -f compose/vc-services.yml
 GO_TRUST := -f compose/go-trust.yml
@@ -26,6 +27,9 @@ up-verifier:
 
 up-verifier-core:
 	$(COMPOSE) $(CORE) $(GO_TRUST) $(CONFORMANCE) up -d
+
+up-issuer-core:
+	$(COMPOSE) $(ISSUER_CORE) $(GO_TRUST) $(CONFORMANCE) up -d
 
 up-wallet:
 	$(COMPOSE) $(WALLET) $(GO_TRUST) $(VC_SERVICES) $(CONFORMANCE) up -d
@@ -52,6 +56,9 @@ test-verifier:
 
 test-verifier-core:
 	VERIFIER_IMPL=core NODE_TLS_REJECT_UNAUTHORIZED=0 npx playwright test specs/conformance/oid4vp-verifier.spec.ts
+
+test-issuer-core:
+	NODE_TLS_REJECT_UNAUTHORIZED=0 npx playwright test specs/conformance/oid4vci-issuer-core.spec.ts
 
 test-wallet-vci:
 	NODE_TLS_REJECT_UNAUTHORIZED=0 npx playwright test specs/conformance/oid4vci-wallet.spec.ts
@@ -87,5 +94,6 @@ test-android: test-android-vci test-android-vp
 ci-issuer: up-issuer test-issuer
 ci-verifier: up-verifier test-verifier
 ci-verifier-core: up-verifier-core test-verifier-core
+ci-issuer-core: up-issuer-core test-issuer-core
 ci-wallet: up-wallet test-wallet
 ci-android: up-android test-android

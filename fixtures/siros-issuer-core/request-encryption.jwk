@@ -1,0 +1,10 @@
+{
+  "kty": "EC",
+  "x": "6NOlfnnWI3r2hZ4H2h47qxC1BdVD9EYSv-YPU2rGoZg",
+  "y": "P2v-1rxglIhng5tt6V8Sn9k1EpT4HD6SrRauBqrJKK8",
+  "crv": "P-256",
+  "d": "jX-wCWKBlyzDeh5nsJOqu9IaeBtbEUSFjjVuPKcOspA",
+  "alg": "ECDH-ES",
+  "use": "enc",
+  "kid": "request-encryption-1"
+}
