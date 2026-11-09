@@ -1,0 +1,1 @@
+module engine_adapter_sdkFFI { header "engine_adapter_sdkFFI.h" export * }
