@@ -1,0 +1,110 @@
+# Publish siros-wallet-core's release conformance sets to the site.
+#
+# The ZERO-SECRETS pull model: this repo OWNS the gh-pages publish, so it
+# also pulls the work - each release's conformance verdict (the
+# certification-package ZIPs + the run summaries) rides the release's own
+# public assets in siros-wallet-core, uploaded there by that repo's
+# conformance workflow with nothing but its own github.token. This workflow
+# finds releases whose set is not on the site yet and publishes them
+# (publish-pages.mjs, --collection releases - permanent, never pruned).
+#
+# Nothing dispatches, so there is no cross-repo token: the 90-day PAT
+# rotation the push design needed (and the silent quarterly breakage when
+# it lapsed) is gone. A release publishes within a day of its cut, or
+# immediately via workflow_dispatch ("Run workflow" with the tag).
+#
+# Self-healing by construction: a failed or missed publish is simply picked
+# up by the next run - the check is "which release sets does the site lack".
+
+name: Publish wallet-core release conformance
+
+on:
+  schedule:
+    - cron: '23 6 * * *' # daily 06:23 UTC
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: 'Publish only this release tag (default: every unpublished release)'
+        required: false
+        default: ''
+        type: string
+
+permissions:
+  contents: write # the gh-pages push (this repo's own branch - no cross-repo scope)
+
+concurrency:
+  group: publish-releases
+  cancel-in-progress: false
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0 # the gh-pages branch publish-pages.mjs works over
+
+      - name: Find the release sets the site lacks
+        id: pending
+        env:
+          GH_TOKEN: ${{ github.token }}
+          WANT_TAG: ${{ inputs.tag }}
+        run: |
+          set -eu
+          mkdir -p release-sets
+          # The wallet-core releases the public API lists (drafts are invisible
+          # to this repo's token, which is fine: a draft is not a release).
+          # Their conformance assets: the certification ZIPs + the summaries
+          # that repo's own workflow uploaded with its own github.token.
+          gh api repos/sirosfoundation/siros-wallet-core/releases --paginate \
+            -q '.[] | select(.assets | length > 0) | [.tag_name, .html_url] | @tsv' \
+            > all-releases.tsv
+
+          git fetch origin gh-pages --depth=1 || true
+          published=0
+          pending=""
+          while IFS=$'\t' read -r tag url; do
+            if [ -n "$WANT_TAG" ] && [ "$tag" != "$WANT_TAG" ]; then continue; fi
+            if git cat-file -e "FETCH_HEAD:releases/${tag}/index.html" 2>/dev/null; then
+              echo "- $tag: already published"
+              continue
+            fi
+
+            gh api "repos/sirosfoundation/siros-wallet-core/releases/tags/${tag}" \
+              -q '.assets[].browser_download_url' > "release-sets/${tag}.urls" || true
+            # Only releases the conformance workflow uploaded for: the ZIPs and
+            # the summaries. A release without them is not ours to publish.
+            grep -q 'conformance-report-.*\.zip' "release-sets/${tag}.urls" || { echo "- $tag: no conformance assets"; continue; }
+            grep -q -- '-summary\.json' "release-sets/${tag}.urls" || { echo "- $tag: no summaries"; continue; }
+
+            mkdir -p "release-sets/${tag}"
+            while read -r asset; do
+              curl -sfL -o "release-sets/${tag}/$(basename "$asset")" "$asset"
+            done < "release-sets/${tag}.urls"
+            rm "release-sets/${tag}.urls"
+            echo "- $tag: $(ls "release-sets/${tag}" | wc -l) assets ready"
+            pending="$pending $tag"
+          done < all-releases.tsv
+
+          # Bound the run: the oldest leftovers catch the next run (self-healing).
+          for tag in $pending; do echo "$tag" >> pending.txt; done
+          [ -f pending.txt ] || touch pending.txt
+          head -5 pending.txt > pending-first.txt
+          mv pending-first.txt pending.txt
+          echo "count=$(wc -l < pending.txt)" >> "$GITHUB_OUTPUT"
+
+      - name: Publish each release set (the permanent collection)
+        if: steps.pending.outputs.count != '0'
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -eu
+          while read -r tag; do
+            echo "── publishing $tag"
+            node scripts/publish-pages.mjs "release-sets/${tag}" \
+              --run-id "${tag}" \
+              --collection releases \
+              --run-url "https://github.com/sirosfoundation/siros-wallet-core/releases/tag/${tag}"
+          done < pending.txt

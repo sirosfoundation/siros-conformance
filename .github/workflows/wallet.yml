@@ -28,8 +28,9 @@ on:
         required: false
         default: ''
         type: string
-  repository_dispatch:
-    types: [conformance-wallet]
+  # No repository_dispatch: siros-wallet-core's release publishes ride the
+  # zero-secrets pull model (publish-releases.yml reads the public release
+  # assets) - nothing dispatches, so no cross-repo token exists to rotate.
   schedule:
     - cron: '0 6 * * 1'  # Weekly Monday 06:00 UTC
   push:

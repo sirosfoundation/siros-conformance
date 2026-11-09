@@ -331,6 +331,40 @@ test.describe('Mini-wallet (the raw Rust engine core) — OID4VP', () => {
           console.log(`[mini-wallet] Export failed (non-fatal): ${(error as Error).message}`);
         }
 
+        // The run's summary (publish-pages.mjs indexes it): one file per
+        // variant plan - the planId ties it to the exported ZIP of the same
+        // plan, and the release upload carries both, so the conformance
+        // repo's release publisher (the zero-secrets pull model - it reads
+        // the public release assets, nothing dispatches, no token rotates)
+        // can index the set from the release alone.
+        const summaryFailed = results.filter((r) => !r.passed);
+        fs.writeFileSync(
+          path.join(RESULTS_DIR, `mini-wallet-vp-${planId}-summary.json`),
+          JSON.stringify(
+            {
+              profile: 'mini-wallet-vp',
+              plan: variantConfig.planName ?? VP_PLAN_NAME,
+              planId,
+              variant: variantConfig.name,
+              timestamp: new Date().toISOString(),
+              planDetailUrl: api.getPlanDetailUrl(planId),
+              total: results.length,
+              passed: results.length - summaryFailed.length,
+              failed: summaryFailed.length,
+              modules: results,
+              metadata: {
+                targetRepo: process.env.TARGET_REPO || 'sirosfoundation/siros-wallet-core',
+                runId: process.env.GITHUB_RUN_ID || '',
+                actor: process.env.GITHUB_ACTOR || '',
+                sha: process.env.GITHUB_SHA || '',
+                ref: process.env.GITHUB_REF || '',
+              },
+            },
+            null,
+            2
+          )
+        );
+
         const failures = results.filter((r) => !r.passed);
         expect(
           failures,

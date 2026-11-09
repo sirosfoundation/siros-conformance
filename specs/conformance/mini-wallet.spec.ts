@@ -182,7 +182,21 @@ test.describe('Mini-wallet (the raw Rust engine core) — OID4VCI', () => {
           status: string;
           result: string;
           passed: boolean;
+          conditions?: Record<string, number>;
+          failures?: Array<{ src: string; msg: string }>;
         }> = [];
+
+        // The module's condition breakdown, best-effort: a module whose
+        // conditions cannot be read (an errored module, a suite hiccup)
+        // still lands in the summary - with empty conditions.
+        const conditionsOf = async (moduleId: string) => {
+          try {
+            const { counts, failures } = await api.getModuleConditions(moduleId);
+            return { conditions: counts, failures };
+          } catch {
+            return {};
+          }
+        };
 
         for (const moduleName of planModules) {
           if (BLACKLIST[moduleName]) {
@@ -217,6 +231,7 @@ test.describe('Mini-wallet (the raw Rust engine core) — OID4VCI', () => {
               status: info.status,
               result: info.result,
               passed: info.result === 'PASSED',
+              ...(await conditionsOf(moduleId)),
             });
             continue;
           }
@@ -259,6 +274,7 @@ test.describe('Mini-wallet (the raw Rust engine core) — OID4VCI', () => {
             // SKIPPED is not a failure: the suite skips the modules the
             // plan variant does not exercise (e.g. batch issuance).
             passed: finalInfo.result === 'PASSED' || finalInfo.result === 'SKIPPED',
+            ...(await conditionsOf(moduleId)),
           });
         }
 
@@ -278,6 +294,40 @@ test.describe('Mini-wallet (the raw Rust engine core) — OID4VCI', () => {
         } catch (error) {
           console.log(`[mini-wallet] Export failed (non-fatal): ${(error as Error).message}`);
         }
+
+        // The run's summary (publish-pages.mjs indexes it): one file per
+        // variant plan - the planId ties it to the exported ZIP of the same
+        // plan, and the release upload carries both, so the conformance
+        // repo's release publisher (the zero-secrets pull model - it reads
+        // the public release assets, nothing dispatches, no token rotates)
+        // can index the set from the release alone.
+        const failed = results.filter((r) => !r.passed);
+        fs.writeFileSync(
+          path.join(RESULTS_DIR, `mini-wallet-vci-${planId}-summary.json`),
+          JSON.stringify(
+            {
+              profile: 'mini-wallet',
+              plan: VCI_PLAN_NAME,
+              planId,
+              variant: variantConfig.name,
+              timestamp: new Date().toISOString(),
+              planDetailUrl: api.getPlanDetailUrl(planId),
+              total: results.length,
+              passed: results.length - failed.length,
+              failed: failed.length,
+              modules: results,
+              metadata: {
+                targetRepo: process.env.TARGET_REPO || 'sirosfoundation/siros-wallet-core',
+                runId: process.env.GITHUB_RUN_ID || '',
+                actor: process.env.GITHUB_ACTOR || '',
+                sha: process.env.GITHUB_SHA || '',
+                ref: process.env.GITHUB_REF || '',
+              },
+            },
+            null,
+            2
+          )
+        );
 
         const failures = results.filter((r) => !r.passed);
         expect(failures, `suite failures: ${JSON.stringify(failures, null, 2)}`).toHaveLength(0);

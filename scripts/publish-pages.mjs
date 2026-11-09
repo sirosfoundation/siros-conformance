@@ -33,6 +33,11 @@ const runUrl = getFlag('--run-url') || '';
 const maxRuns = parseInt(getFlag('--max-runs') || '20', 10);
 const repo = process.env.GITHUB_REPOSITORY || 'sirosfoundation/siros-conformance';
 const pagesBase = getFlag('--pages-base') || `https://${repo.split('/')[0]}.github.io/${repo.split('/')[1]}`;
+// The collection this set belongs to: `runs` (the default - the ephemeral
+// CI runs, pruned to the latest maxRuns) or `releases` (the permanent,
+// per-tag sets a release publish adds - never pruned; a release is a
+// verdict about a tag, and the tag outlives the run window).
+const collection = getFlag('--collection') || 'runs';
 
 // ── Helpers ────────────────────────────────────────────────────────────────
 
@@ -89,7 +94,7 @@ if (ghPagesExists) {
 
 // ── Create run directory ───────────────────────────────────────────────────
 
-const runDir = path.join(pagesDir, 'runs', runId);
+const runDir = path.join(pagesDir, collection, runId);
 ensureDir(runDir);
 
 // Extract each ZIP into its own subdirectory
@@ -225,7 +230,7 @@ function brandReportHtml(htmlFile, backUrl, runId, meta = {}) {
 
 // Brand all extracted report HTML files
 function brandExtractedReports(runDir, runId, meta = {}) {
-  const backUrl = `${pagesBase}/runs/${runId}/`;
+  const backUrl = `${pagesBase}/${collection}/${runId}/`;
   function walkDir(dir) {
     for (const entry of fs.readdirSync(dir)) {
       const full = path.join(dir, entry);
@@ -366,7 +371,7 @@ function htmlFooter() {
 </html>`;
 }
 
-const PROFILE_LABELS = { 'wallet-vci': 'OID4VCI Wallet', 'wallet-vp': 'OID4VP Wallet', 'issuer': 'OID4VCI Issuer', 'verifier': 'OID4VP Verifier', 'mini-wallet': 'OID4VCI Wallet — mini (the raw Rust engine)' };
+const PROFILE_LABELS = { 'wallet-vci': 'OID4VCI Wallet', 'wallet-vp': 'OID4VP Wallet', 'issuer': 'OID4VCI Issuer', 'verifier': 'OID4VP Verifier', 'mini-wallet': 'OID4VCI Wallet — mini (the raw Rust engine)', 'mini-wallet-vp': 'OID4VP Wallet — mini (the raw Rust engine)' };
 
 // Condition categories in display order (left→right in the bar)
 const COND_CATS = [
@@ -522,8 +527,58 @@ fs.writeFileSync(path.join(runDir, 'index.html'), generateRunIndex(runId, summar
 // ── Generate top-level index.html ──────────────────────────────────────────
 
 function generateTopIndex(pagesDir, pagesBase) {
+  // The permanent, per-tag release sets (the `releases` collection): the
+  // conformance verdicts of siros-wallet-core's release tags, pulled from
+  // the releases' own assets (see publish-releases.yml - the zero-secrets
+  // path; nothing dispatches, no token rotates).
+  const releasesDir = path.join(pagesDir, 'releases');
+  let releasesHtml = '';
+  if (fs.existsSync(releasesDir)) {
+    const releases = [];
+    for (const entry of fs.readdirSync(releasesDir)) {
+      const entryPath = path.join(releasesDir, entry);
+      if (!fs.statSync(entryPath).isDirectory()) continue;
+      const summaryFiles = fs.readdirSync(entryPath).filter(f => f.endsWith('-summary.json'));
+      let timestamp = null, totalPassed = 0, totalFailed = 0, totalModules = 0;
+      const profiles = [];
+      const condTotals = {};
+      for (const sf of summaryFiles) {
+        try {
+          const s = JSON.parse(fs.readFileSync(path.join(entryPath, sf), 'utf-8'));
+          if (!timestamp) timestamp = s.timestamp;
+          totalPassed += s.passed || 0;
+          totalFailed += s.failed || 0;
+          totalModules += s.total || 0;
+          profiles.push(s.profile);
+          for (const m of (s.modules || [])) {
+            if (!m.conditions) continue;
+            for (const [k, v] of Object.entries(m.conditions)) {
+              if (k === 'FINISHED') continue;
+              condTotals[k] = (condTotals[k] || 0) + v;
+            }
+          }
+        } catch {}
+      }
+      releases.push({ tag: entry, timestamp: timestamp || fs.statSync(entryPath).mtime.toISOString(), totalPassed, totalFailed, totalModules, profiles, condTotals });
+    }
+    releases.sort((a, b) => b.timestamp.localeCompare(a.timestamp));
+    if (releases.length > 0) {
+      releasesHtml += `    <h2>Wallet-core releases</h2>\n`;
+      releasesHtml += `    <p>The conformance verdict of each <a href="https://github.com/sirosfoundation/siros-wallet-core">siros-wallet-core</a> release tag - the raw engine's own suites (issuance, presentation), pulled from the release's assets.</p>\n`;
+      releasesHtml += `    <table>\n      <tr><th>Release</th><th>Date</th><th>Modules</th><th>Conditions</th></tr>\n`;
+      for (const r of releases) {
+        const date = new Date(r.timestamp).toISOString().replace('T', ' ').replace(/\.\d+Z/, ' UTC');
+        releasesHtml += `      <tr><td><a href="releases/${escapeHtml(r.tag)}/"><code>${escapeHtml(r.tag)}</code></a></td><td>${date}</td><td>${r.totalModules} (${r.totalPassed} passed, ${r.totalFailed} failed)</td><td>${conditionBar(r.condTotals)}</td></tr>\n`;
+      }
+      releasesHtml += `    </table>\n`;
+    }
+  }
+
   const runsDir = path.join(pagesDir, 'runs');
-  if (!fs.existsSync(runsDir)) return htmlHeader('No Results') + '<p>No conformance runs yet.</p>' + htmlFooter();
+  if (!fs.existsSync(runsDir)) {
+    if (releasesHtml) return htmlHeader('Conformance Results') + `    <h1>SIROS Conformance Results</h1>\n` + releasesHtml + htmlFooter();
+    return htmlHeader('No Results') + '<p>No conformance runs yet.</p>' + htmlFooter();
+  }
 
   const runs = [];
   for (const entry of fs.readdirSync(runsDir)) {
@@ -576,6 +631,7 @@ function generateTopIndex(pagesDir, pagesBase) {
   let html = htmlHeader('Conformance Results');
   html += `    <h1>SIROS Conformance Results</h1>\n`;
   html += `    <p>Historical conformance test results from the <a href="https://github.com/sirosfoundation/siros-conformance">siros-conformance</a> test suite.</p>\n`;
+  html += releasesHtml;
 
   // Stats
   if (runs.length > 0) {
@@ -618,6 +674,9 @@ function generateTopIndex(pagesDir, pagesBase) {
 }
 
 // ── Prune old runs ─────────────────────────────────────────────────────────
+// The `runs` collection only: the ephemeral CI runs, kept to the latest
+// maxRuns. The `releases` collection is NEVER pruned here - a release set
+// is a verdict about a tag, and the tag outlives the run window.
 
 const runsDir = path.join(pagesDir, 'runs');
 if (fs.existsSync(runsDir)) {
@@ -661,7 +720,7 @@ try {
   if (status) {
     run(`git commit -m "Conformance results for run ${runId}"`, { cwd: pagesDir });
     run('git push origin gh-pages', { cwd: pagesDir });
-    console.log(`Published results to ${pagesBase}/runs/${runId}/`);
+    console.log(`Published results to ${pagesBase}/${collection}/${runId}/`);
   } else {
     console.log('No changes to publish');
   }
