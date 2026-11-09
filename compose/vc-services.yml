@@ -38,10 +38,14 @@ services:
         condition: service_healthy
     healthcheck:
       test: ["CMD", "curl", "-sf", "http://localhost:8080/health"]
+      # The grace period a cold boot needs: CI pulls the image before the
+      # first check (found unhealthy on a first-run CI boot with the
+      # default none - the wallet-core dispatch died at "dependency failed
+      # to start: container vc-registry is unhealthy").
       interval: 5s
       timeout: 5s
-      retries: 10
-      start_period: 30s
+      start_period: 120s
+      retries: 20
     networks:
       - conformance-network
 
@@ -66,10 +70,14 @@ services:
         condition: service_healthy
     healthcheck:
       test: ["CMD", "curl", "-sf", "http://localhost:8080/health"]
+      # The grace period a cold boot needs: CI pulls the image before the
+      # first check (found unhealthy on a first-run CI boot with the
+      # default none - the wallet-core dispatch died at "dependency failed
+      # to start: container vc-registry is unhealthy").
       interval: 5s
       timeout: 5s
-      retries: 10
-      start_period: 30s
+      start_period: 120s
+      retries: 20
     networks:
       - conformance-network
 
@@ -95,10 +103,14 @@ services:
         condition: service_healthy
     healthcheck:
       test: ["CMD", "curl", "-sf", "http://localhost:8080/health"]
+      # The grace period a cold boot needs: CI pulls the image before the
+      # first check (found unhealthy on a first-run CI boot with the
+      # default none - the wallet-core dispatch died at "dependency failed
+      # to start: container vc-registry is unhealthy").
       interval: 5s
       timeout: 5s
-      retries: 10
-      start_period: 30s
+      start_period: 120s
+      retries: 20
     networks:
       - conformance-network
 
@@ -125,10 +137,14 @@ services:
         condition: service_healthy
     healthcheck:
       test: ["CMD", "curl", "-sf", "http://localhost:8080/health"]
+      # The grace period a cold boot needs: CI pulls the image before the
+      # first check (found unhealthy on a first-run CI boot with the
+      # default none - the wallet-core dispatch died at "dependency failed
+      # to start: container vc-registry is unhealthy").
       interval: 5s
       timeout: 5s
-      retries: 10
-      start_period: 30s
+      start_period: 120s
+      retries: 20
     networks:
       - conformance-network
 
