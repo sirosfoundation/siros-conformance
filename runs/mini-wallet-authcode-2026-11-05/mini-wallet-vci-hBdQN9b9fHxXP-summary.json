@@ -1,0 +1,69 @@
+{
+  "profile": "mini-wallet",
+  "plan": "oid4vci-1_0-wallet-test-plan",
+  "planId": "hBdQN9b9fHxXP",
+  "variant": "sd_jwt_vc / authorization_code / deferred",
+  "timestamp": "2026-11-05T07:34:59Z",
+  "planDetailUrl": "https://localhost.emobix.co.uk:8443/plan-detail.html?log=hBdQN9b9fHxXP",
+  "total": 4,
+  "passed": 4,
+  "failed": 0,
+  "modules": [
+    {
+      "module": "oid4vci-1_0-wallet-happy-path-with-scopes-without-authorization-details-in-token-response",
+      "status": "FINISHED",
+      "result": "PASSED",
+      "passed": true,
+      "conditions": {
+        "INFO": 20,
+        "SUCCESS": 200
+      },
+      "failures": []
+    },
+    {
+      "module": "oid4vci-1_0-wallet-test-batch-credential-issuance",
+      "status": "FINISHED",
+      "result": "SKIPPED",
+      "passed": true,
+      "conditions": {
+        "INFO": 20,
+        "SUCCESS": 202,
+        "SKIPPED": 1
+      },
+      "failures": []
+    },
+    {
+      "module": "oid4vci-1_0-wallet-test-credential-issuance",
+      "status": "FINISHED",
+      "result": "PASSED",
+      "passed": true,
+      "conditions": {
+        "INFO": 20,
+        "SUCCESS": 201
+      },
+      "failures": []
+    },
+    {
+      "module": "oid4vci-1_0-wallet-test-credential-issuance-notification",
+      "status": "FINISHED",
+      "result": "PASSED",
+      "passed": true,
+      "conditions": {
+        "INFO": 23,
+        "SUCCESS": 218
+      },
+      "failures": []
+    }
+  ],
+  "metadata": {
+    "targetRepo": "sirosfoundation/siros-wallet-core",
+    "targetPr": "",
+    "runId": "mini-wallet-authcode-2026-11-05",
+    "actor": "leifj",
+    "sha": "",
+    "ref": "",
+    "images": {},
+    "goldenRelease": "",
+    "wallet": "mini-wallet (engine-adapter-wasm harness page; the raw Rust engine, no wallet-frontend/go-wallet-backend)"
+  }
+}
