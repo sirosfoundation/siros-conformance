@@ -1,0 +1,40 @@
+{
+  "run": "mini-wallet — the OID4VP Digital Credentials API channel against the raw Rust engine",
+  "date": "2026-11-09",
+  "suite": {
+    "url": "https://localhost.emobix.co.uk:8443/",
+    "version": "5.3.4",
+    "plan": "oid4vp-1final-wallet-haip-test-plan",
+    "alias": "siros-wallet-vp-test",
+    "module_group": "x509_hash / request_uri_signed / dc_api.jwt (eudi_pid on the HAIP profile)"
+  },
+  "wallet": {
+    "harness": "engine-adapter-wasm's mini-wallet page (target/wasm-page)",
+    "engine": "siros-wallet-core",
+    "engine_commit": "4350e89",
+    "profile": "mini-wallet (wallet-frontend and go-wallet-backend disabled; the harness plays the browser's role — the engine's flow completes with the DigitalCredential's data and the spec hands it to the module's browser API submit URL, exactly as the suite's own page does)"
+  },
+  "plan_id": "t8zTXhIGHDy25",
+  "modules": [
+    { "module": "oid4vp-1final-wallet-happy-flow", "result": "PASSED" },
+    { "module": "oid4vp-1final-wallet-alternate-happy-flow", "result": "PASSED" },
+    { "module": "oid4vp-1final-wallet-ignores-unusable-encryption-key", "result": "PASSED" },
+    { "module": "oid4vp-1final-wallet-all-mandatory-claims", "result": "PASSED" },
+    { "module": "oid4vp-1final-wallet-fewer-claims-than-available", "result": "PASSED" },
+    { "module": "oid4vp-1final-wallet-optional-credential-set", "result": "PASSED" },
+    { "module": "oid4vp-1final-wallet-no-claims-in-dcql-query", "result": "PASSED" },
+    { "module": "oid4vp-1final-wallet-pid-claims-path-array-index", "result": "PASSED" },
+    { "module": "oid4vp-1final-wallet-pid-claims-path-array-all-elements", "result": "PASSED" },
+    { "module": "oid4vp-1final-wallet-pid-claims-path-object-member", "result": "PASSED" },
+    { "module": "oid4vp-1final-wallet-negative-test-invalid-request-object-signature", "result": "REVIEW" },
+    { "module": "oid4vp-1final-wallet-negative-test-invalid-request-object-typ", "result": "REVIEW" },
+    { "module": "oid4vp-1final-wallet-negative-test-missing-request-object-typ", "result": "REVIEW" },
+    { "module": "oid4vp-1final-wallet-negative-test-missing-nonce", "result": "REVIEW" },
+    { "module": "oid4vp-1final-wallet-negative-test-wrong-expected-origins", "result": "REVIEW" },
+    { "module": "oid4vp-1final-wallet-negative-test-invalid-client-id-prefix", "result": "REVIEW" },
+    { "module": "oid4vp-1final-wallet-negative-test-unknown-transaction-data-type", "result": "REVIEW" },
+    { "module": "oid4vp-1final-wallet-negative-test-required-non-matching-credential", "result": "PASSED" },
+    { "module": "oid4vp-1final-wallet-negative-test-claim-not-in-credential", "result": "REVIEW" }
+  ],
+  "notes": "REVIEW is the negative modules' expected outcome: the wallet refused each invalid request for the right reason (each verified in the flow error — the signature, the typ, the nonce, the origin binding, the scheme, the transaction-data type, the unsatisfiable query, the absent claim), the browser API's promise rejection posted to the module's submit URL, and the tester's error-screen placeholder uploaded through the suite's API. Reproduce with: make wasm-page in siros-wallet-core, then npx playwright test specs/conformance/mini-wallet-vp-dcapi.spec.ts here."
+}
