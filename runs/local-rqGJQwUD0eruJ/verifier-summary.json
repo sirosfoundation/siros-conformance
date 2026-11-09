@@ -14,85 +14,160 @@
       "module": "oid4vp-1final-verifier-happy-flow",
       "status": "FINISHED",
       "result": "REVIEW",
-      "passed": true
+      "passed": true,
+      "conditions": {
+        "INFO": 16,
+        "SUCCESS": 63,
+        "REVIEW": 1
+      },
+      "failures": []
     },
     {
       "module": "oid4vp-1final-verifier-minimal-cnf-jwk",
       "status": "FINISHED",
       "result": "REVIEW",
-      "passed": true
+      "passed": true,
+      "conditions": {
+        "INFO": 16,
+        "SUCCESS": 59,
+        "REVIEW": 1
+      },
+      "failures": []
     },
     {
       "module": "oid4vp-1final-verifier-request-uri-method-post",
       "status": "FINISHED",
       "result": "SKIPPED",
-      "passed": false
+      "passed": false,
+      "conditions": {
+        "INFO": 7,
+        "SUCCESS": 1,
+        "SKIPPED": 1
+      },
+      "failures": []
     },
     {
       "module": "oid4vp-1final-verifier-request-uri-fetched-twice",
       "status": "FINISHED",
       "result": "REVIEW",
-      "passed": true
+      "passed": true,
+      "conditions": {
+        "INFO": 16,
+        "SUCCESS": 62,
+        "REVIEW": 1
+      },
+      "failures": []
     },
     {
       "module": "oid4vp-1final-verifier-invalid-kb-jwt-signature",
       "status": "FINISHED",
       "result": "PASSED",
-      "passed": true
+      "passed": true,
+      "conditions": {
+        "INFO": 16,
+        "SUCCESS": 51
+      },
+      "failures": []
     },
     {
       "module": "oid4vp-1final-verifier-invalid-credential-signature",
       "status": "FINISHED",
       "result": "PASSED",
-      "passed": true
+      "passed": true,
+      "conditions": {
+        "INFO": 16,
+        "SUCCESS": 51
+      },
+      "failures": []
     },
     {
       "module": "oid4vp-1final-verifier-invalid-sd-hash",
       "status": "FINISHED",
       "result": "PASSED",
-      "passed": true
+      "passed": true,
+      "conditions": {
+        "INFO": 16,
+        "SUCCESS": 51
+      },
+      "failures": []
     },
     {
       "module": "oid4vp-1final-verifier-invalid-kb-jwt-nonce",
       "status": "FINISHED",
       "result": "PASSED",
-      "passed": true
+      "passed": true,
+      "conditions": {
+        "INFO": 16,
+        "SUCCESS": 51
+      },
+      "failures": []
     },
     {
       "module": "oid4vp-1final-verifier-invalid-kb-jwt-aud",
       "status": "FINISHED",
       "result": "PASSED",
-      "passed": true
+      "passed": true,
+      "conditions": {
+        "INFO": 16,
+        "SUCCESS": 51
+      },
+      "failures": []
     },
     {
       "module": "oid4vp-1final-verifier-kb-jwt-iat-in-past",
       "status": "FINISHED",
       "result": "PASSED",
-      "passed": true
+      "passed": true,
+      "conditions": {
+        "INFO": 16,
+        "SUCCESS": 51
+      },
+      "failures": []
     },
     {
       "module": "oid4vp-1final-verifier-kb-jwt-iat-in-future",
       "status": "FINISHED",
       "result": "PASSED",
-      "passed": true
+      "passed": true,
+      "conditions": {
+        "INFO": 16,
+        "SUCCESS": 51
+      },
+      "failures": []
     },
     {
       "module": "oid4vp-1final-verifier-present-revoked-credential",
       "status": "FINISHED",
       "result": "PASSED",
-      "passed": true
+      "passed": true,
+      "conditions": {
+        "INFO": 16,
+        "SUCCESS": 56
+      },
+      "failures": []
     },
     {
       "module": "oid4vp-1final-verifier-present-credential-without-status",
       "status": "FINISHED",
       "result": "REVIEW",
-      "passed": true
+      "passed": true,
+      "conditions": {
+        "INFO": 16,
+        "SUCCESS": 52,
+        "REVIEW": 1
+      },
+      "failures": []
     },
     {
       "module": "oid4vp-1final-verifier-wrong-vct",
       "status": "FINISHED",
       "result": "PASSED",
-      "passed": true
+      "passed": true,
+      "conditions": {
+        "INFO": 16,
+        "SUCCESS": 51
+      },
+      "failures": []
     }
   ]
 }
