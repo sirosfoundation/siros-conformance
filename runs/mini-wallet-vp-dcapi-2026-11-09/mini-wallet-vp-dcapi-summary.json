@@ -1,0 +1,241 @@
+{
+  "profile": "mini-wallet",
+  "plan": "oid4vp-1final-wallet-haip-test-plan",
+  "planId": "t8zTXhIGHDy25",
+  "variant": "sd_jwt_vc / eudi_pid / x509_hash / dc_api.jwt / request_uri_signed / haip",
+  "timestamp": "2026-11-09T23:00:00Z",
+  "planDetailUrl": "https://localhost.emobix.co.uk:8443/plan-detail.html?log=t8zTXhIGHDy25",
+  "total": 19,
+  "passed": 11,
+  "failed": 0,
+  "modules": [
+    {
+      "module": "oid4vp-1final-wallet-happy-flow",
+      "status": "FINISHED",
+      "result": "PASSED",
+      "passed": true,
+      "conditions": {
+        "INFO": 13,
+        "SUCCESS": 66
+      },
+      "failures": []
+    },
+    {
+      "module": "oid4vp-1final-wallet-alternate-happy-flow",
+      "status": "FINISHED",
+      "result": "PASSED",
+      "passed": true,
+      "conditions": {
+        "INFO": 13,
+        "SUCCESS": 69
+      },
+      "failures": []
+    },
+    {
+      "module": "oid4vp-1final-wallet-ignores-unusable-encryption-key",
+      "status": "FINISHED",
+      "result": "PASSED",
+      "passed": true,
+      "conditions": {
+        "INFO": 13,
+        "SUCCESS": 66
+      },
+      "failures": []
+    },
+    {
+      "module": "oid4vp-1final-wallet-all-mandatory-claims",
+      "status": "FINISHED",
+      "result": "PASSED",
+      "passed": true,
+      "conditions": {
+        "INFO": 13,
+        "SUCCESS": 67
+      },
+      "failures": []
+    },
+    {
+      "module": "oid4vp-1final-wallet-fewer-claims-than-available",
+      "status": "FINISHED",
+      "result": "PASSED",
+      "passed": true,
+      "conditions": {
+        "INFO": 13,
+        "SUCCESS": 66
+      },
+      "failures": []
+    },
+    {
+      "module": "oid4vp-1final-wallet-optional-credential-set",
+      "status": "FINISHED",
+      "result": "PASSED",
+      "passed": true,
+      "conditions": {
+        "INFO": 13,
+        "SUCCESS": 66
+      },
+      "failures": []
+    },
+    {
+      "module": "oid4vp-1final-wallet-no-claims-in-dcql-query",
+      "status": "FINISHED",
+      "result": "PASSED",
+      "passed": true,
+      "conditions": {
+        "INFO": 13,
+        "SUCCESS": 65
+      },
+      "failures": []
+    },
+    {
+      "module": "oid4vp-1final-wallet-pid-claims-path-array-index",
+      "status": "FINISHED",
+      "result": "PASSED",
+      "passed": true,
+      "conditions": {
+        "INFO": 13,
+        "SUCCESS": 67
+      },
+      "failures": []
+    },
+    {
+      "module": "oid4vp-1final-wallet-pid-claims-path-array-all-elements",
+      "status": "FINISHED",
+      "result": "PASSED",
+      "passed": true,
+      "conditions": {
+        "INFO": 13,
+        "SUCCESS": 67
+      },
+      "failures": []
+    },
+    {
+      "module": "oid4vp-1final-wallet-pid-claims-path-object-member",
+      "status": "FINISHED",
+      "result": "PASSED",
+      "passed": true,
+      "conditions": {
+        "INFO": 13,
+        "SUCCESS": 67
+      },
+      "failures": []
+    },
+    {
+      "module": "oid4vp-1final-wallet-negative-test-invalid-request-object-signature",
+      "status": "FINISHED",
+      "result": "REVIEW",
+      "passed": true,
+      "conditions": {
+        "INFO": 13,
+        "SUCCESS": 27,
+        "REVIEW": 1
+      },
+      "failures": []
+    },
+    {
+      "module": "oid4vp-1final-wallet-negative-test-invalid-request-object-typ",
+      "status": "FINISHED",
+      "result": "REVIEW",
+      "passed": true,
+      "conditions": {
+        "INFO": 13,
+        "SUCCESS": 27,
+        "REVIEW": 1
+      },
+      "failures": []
+    },
+    {
+      "module": "oid4vp-1final-wallet-negative-test-missing-request-object-typ",
+      "status": "FINISHED",
+      "result": "REVIEW",
+      "passed": true,
+      "conditions": {
+        "INFO": 13,
+        "SUCCESS": 27,
+        "REVIEW": 1
+      },
+      "failures": []
+    },
+    {
+      "module": "oid4vp-1final-wallet-negative-test-missing-nonce",
+      "status": "FINISHED",
+      "result": "REVIEW",
+      "passed": true,
+      "conditions": {
+        "INFO": 13,
+        "SUCCESS": 26,
+        "REVIEW": 1
+      },
+      "failures": []
+    },
+    {
+      "module": "oid4vp-1final-wallet-negative-test-wrong-expected-origins",
+      "status": "FINISHED",
+      "result": "REVIEW",
+      "passed": true,
+      "conditions": {
+        "INFO": 13,
+        "SUCCESS": 26,
+        "REVIEW": 1
+      },
+      "failures": []
+    },
+    {
+      "module": "oid4vp-1final-wallet-negative-test-invalid-client-id-prefix",
+      "status": "FINISHED",
+      "result": "REVIEW",
+      "passed": true,
+      "conditions": {
+        "INFO": 13,
+        "SUCCESS": 27,
+        "REVIEW": 1
+      },
+      "failures": []
+    },
+    {
+      "module": "oid4vp-1final-wallet-negative-test-unknown-transaction-data-type",
+      "status": "FINISHED",
+      "result": "REVIEW",
+      "passed": true,
+      "conditions": {
+        "INFO": 13,
+        "SUCCESS": 28,
+        "REVIEW": 1
+      },
+      "failures": []
+    },
+    {
+      "module": "oid4vp-1final-wallet-negative-test-required-non-matching-credential",
+      "status": "FINISHED",
+      "result": "PASSED",
+      "passed": true,
+      "conditions": {
+        "INFO": 13,
+        "SUCCESS": 32
+      },
+      "failures": []
+    },
+    {
+      "module": "oid4vp-1final-wallet-negative-test-claim-not-in-credential",
+      "status": "FINISHED",
+      "result": "REVIEW",
+      "passed": true,
+      "conditions": {
+        "INFO": 13,
+        "SUCCESS": 27,
+        "REVIEW": 1
+      },
+      "failures": []
+    }
+  ],
+  "metadata": {
+    "targetRepo": "sirosfoundation/siros-wallet-core",
+    "targetPr": "",
+    "runId": "mini-wallet-vp-dcapi-2026-11-09",
+    "actor": "leifj",
+    "sha": "4350e89",
+    "ref": "refs/heads/main",
+    "images": {},
+    "goldenRelease": "",
+    "wallet": "mini-wallet (engine-adapter-wasm harness page; the raw Rust engine, no wallet-frontend/go-wallet-backend)"
+  }
+}
