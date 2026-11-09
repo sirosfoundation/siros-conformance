@@ -106,7 +106,7 @@ const SIROS_CSS = `
   .cbar-legend .dot { width: 10px; height: 10px; border-radius: 2px; display: inline-block; }
   .cbar-wrap { min-width: 180px; }
 `;
-const PROFILE_LABELS = { 'wallet-vci': 'OID4VCI Wallet', 'wallet-vp': 'OID4VP Wallet', 'issuer': 'OID4VCI Issuer', 'verifier': 'OID4VP Verifier', 'mini-wallet': 'OID4VCI Wallet — mini (the raw Rust engine)', 'mini-wallet-vp': 'OID4VP Wallet — mini (the raw Rust engine)' };
+const PROFILE_LABELS = { 'wallet-vci': 'OID4VCI Wallet', 'wallet-vp': 'OID4VP Wallet', 'issuer': 'OID4VCI Issuer', 'issuer-core': 'OID4VCI Issuer — core (the raw Rust issuer)', 'verifier': 'OID4VP Verifier', 'siros-verifier-core': 'OID4VP Verifier — core (the raw Rust verifier)', 'mini-wallet': 'OID4VCI Wallet — mini (the raw Rust engine)', 'mini-wallet-vp': 'OID4VP Wallet — mini (the raw Rust engine)' };
 const COND_CATS = [
   { key: 'SUCCESS',  cls: 'cbar-success', color: '#1a7f37', label: 'Success' },
   { key: 'INFO',     cls: 'cbar-info',    color: '#8250df', label: 'Info' },
@@ -577,47 +577,52 @@ fs.writeFileSync(path.join(runDir, 'index.html'), generateRunIndex(runId, summar
 
 function generateTopIndex(pagesDir, pagesBase) {
   // The permanent, per-tag release sets (the `releases` collection): the
-  // conformance verdicts of siros-wallet-core's release tags, pulled from
-  // the releases' own assets (see publish-releases.yml - the zero-secrets
-  // path; nothing dispatches, no token rotates).
+  // conformance verdicts of the three cores' release tags, pulled from the
+  // releases' own assets (see publish-releases.yml - the zero-secrets
+  // path; nothing dispatches, no token rotates). Keyed releases/<core>/<tag>.
   const releasesDir = path.join(pagesDir, 'releases');
   let releasesHtml = '';
   if (fs.existsSync(releasesDir)) {
     const releases = [];
-    for (const entry of fs.readdirSync(releasesDir)) {
-      const entryPath = path.join(releasesDir, entry);
-      if (!fs.statSync(entryPath).isDirectory()) continue;
-      const summaryFiles = fs.readdirSync(entryPath).filter(f => f.endsWith('-summary.json'));
-      let timestamp = null, totalPassed = 0, totalFailed = 0, totalModules = 0;
-      const profiles = [];
-      const condTotals = {};
-      for (const sf of summaryFiles) {
-        try {
-          const s = JSON.parse(fs.readFileSync(path.join(entryPath, sf), 'utf-8'));
-          if (!timestamp) timestamp = s.timestamp;
-          totalPassed += s.passed || 0;
-          totalFailed += s.failed || 0;
-          totalModules += s.total || 0;
-          profiles.push(s.profile);
-          for (const m of (s.modules || [])) {
-            if (!m.conditions) continue;
-            for (const [k, v] of Object.entries(m.conditions)) {
-              if (k === 'FINISHED') continue;
-              condTotals[k] = (condTotals[k] || 0) + v;
+    for (const core of fs.readdirSync(releasesDir)) {
+      const corePath = path.join(releasesDir, core);
+      if (!fs.statSync(corePath).isDirectory()) continue;
+      for (const tag of fs.readdirSync(corePath)) {
+        const entryPath = path.join(corePath, tag);
+        if (!fs.statSync(entryPath).isDirectory()) continue;
+        const summaryFiles = fs.readdirSync(entryPath).filter(f => f.endsWith('-summary.json') || (f.includes('summary') && f.endsWith('.json')));
+        let timestamp = null, totalPassed = 0, totalFailed = 0, totalModules = 0;
+        const profiles = [];
+        const condTotals = {};
+        for (const sf of summaryFiles) {
+          try {
+            const s = JSON.parse(fs.readFileSync(path.join(entryPath, sf), 'utf-8'));
+            if (!timestamp) timestamp = s.timestamp;
+            totalPassed += s.passed || 0;
+            totalFailed += s.failed || 0;
+            totalModules += s.total || 0;
+            profiles.push(s.profile);
+            for (const m of (s.modules || [])) {
+              if (!m.conditions) continue;
+              for (const [k, v] of Object.entries(m.conditions)) {
+                if (k === 'FINISHED') continue;
+                condTotals[k] = (condTotals[k] || 0) + v;
+              }
             }
-          }
-        } catch {}
+          } catch {}
+        }
+        if (summaryFiles.length === 0) continue;
+        releases.push({ core, tag, timestamp: timestamp || fs.statSync(entryPath).mtime.toISOString(), totalPassed, totalFailed, totalModules, profiles, condTotals });
       }
-      releases.push({ tag: entry, timestamp: timestamp || fs.statSync(entryPath).mtime.toISOString(), totalPassed, totalFailed, totalModules, profiles, condTotals });
     }
     releases.sort((a, b) => b.timestamp.localeCompare(a.timestamp));
     if (releases.length > 0) {
-      releasesHtml += `    <h2>Wallet-core releases</h2>\n`;
-      releasesHtml += `    <p>The conformance verdict of each <a href="https://github.com/sirosfoundation/siros-wallet-core">siros-wallet-core</a> release tag - the raw engine's own suites (issuance, presentation), pulled from the release's assets.</p>\n`;
+      releasesHtml += `    <h2>Core releases</h2>\n`;
+      releasesHtml += `    <p>The conformance verdict of each release tag of the three cores - <a href="https://github.com/sirosfoundation/siros-wallet-core">siros-wallet-core</a>, <a href="https://github.com/sirosfoundation/siros-verifier-core">siros-verifier-core</a>, <a href="https://github.com/sirosfoundation/siros-issuer-core">siros-issuer-core</a> - pulled from the releases' own assets.</p>\n`;
       releasesHtml += `    <table>\n      <tr><th>Release</th><th>Date</th><th>Modules</th><th>Conditions</th></tr>\n`;
       for (const r of releases) {
         const date = new Date(r.timestamp).toISOString().replace('T', ' ').replace(/\.\d+Z/, ' UTC');
-        releasesHtml += `      <tr><td><a href="releases/${escapeHtml(r.tag)}/"><code>${escapeHtml(r.tag)}</code></a></td><td>${date}</td><td>${r.totalModules} (${r.totalPassed} passed, ${r.totalFailed} failed)</td><td>${conditionBar(r.condTotals)}</td></tr>\n`;
+        releasesHtml += `      <tr><td><code>${escapeHtml(r.core)}</code> <a href="releases/${escapeHtml(r.core)}/${escapeHtml(r.tag)}/"><code>${escapeHtml(r.tag)}</code></a></td><td>${date}</td><td>${r.totalModules} (${r.totalPassed} passed, ${r.totalFailed} failed)</td><td>${conditionBar(r.condTotals)}</td></tr>\n`;
       }
       releasesHtml += `    </table>\n`;
     }
