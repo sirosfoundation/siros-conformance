@@ -21,7 +21,7 @@ services:
       - conformance-network
 
   vc-registry:
-    image: ${VC_REGISTRY_IMAGE:-ghcr.io/sirosfoundation/vc/registry:latest}
+    image: ${VC_REGISTRY_IMAGE:-ghcr.io/sirosfoundation/vc/registry@sha256:64da9ab109092083e552ea60394ba5344a31a43690cdd078fe3d82399000a6a9}
     container_name: vc-registry
     ports:
       - "9004:8080"
@@ -50,7 +50,7 @@ services:
       - conformance-network
 
   vc-issuer:
-    image: ${VC_ISSUER_IMAGE:-ghcr.io/sirosfoundation/vc/issuer:latest}
+    image: ${VC_ISSUER_IMAGE:-ghcr.io/sirosfoundation/vc/issuer@sha256:b4cd3ae4cb113ec64b63deb788a327ae6d99945be9b6e396c60d12a54c1c4ad0}
     container_name: vc-issuer
     ports:
       - "9000:8080"
@@ -82,7 +82,7 @@ services:
       - conformance-network
 
   vc-verifier:
-    image: ${VC_VERIFIER_IMAGE:-ghcr.io/sirosfoundation/vc/verifier:latest}
+    image: ${VC_VERIFIER_IMAGE:-ghcr.io/sirosfoundation/vc/verifier@sha256:05d6d8347f4c0d7aa58b3a0b8835e3fe9c3b3d75664461e8a4aef6fec897eac9}
     container_name: vc-verifier
     ports:
       - "9001:8080"
@@ -115,7 +115,7 @@ services:
       - conformance-network
 
   vc-apigw:
-    image: ${VC_APIGW_IMAGE:-ghcr.io/sirosfoundation/vc/apigw:latest}
+    image: ${VC_APIGW_IMAGE:-ghcr.io/sirosfoundation/vc/apigw@sha256:3149e0f2a29931dc328d03b19a471754ce931419b47092a09c93aad3f6246312}
     container_name: vc-apigw
     ports:
       - "9003:8080"
