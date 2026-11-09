@@ -21,7 +21,7 @@ import { createRequire } from 'module';
 
 // ── Args ───────────────────────────────────────────────────────────────────
 
-const resultsDir = process.argv[2] || './conformance-results';
+const resultsDir = process.argv[2] && !process.argv[2].startsWith('--') ? process.argv[2] : './conformance-results';
 
 function getFlag(name) {
   const idx = process.argv.indexOf(name);
@@ -39,6 +39,83 @@ const pagesBase = getFlag('--pages-base') || `https://${repo.split('/')[0]}.gith
 // verdict about a tag, and the tag outlives the run window).
 const collection = getFlag('--collection') || 'runs';
 
+// The rendering constants (pure) - declared before the flow so the
+// --reindex maintenance path (below) can call the index generators.
+
+const GITHUB_SVG = `<svg viewBox="0 0 24 24" width="20" height="20" fill="currentColor" aria-hidden="true"><path fill-rule="evenodd" clip-rule="evenodd" d="M12 .5C5.73.5.66 5.57.66 11.84c0 5.02 3.25 9.27 7.76 10.77.57.1.78-.25.78-.55 0-.27-.01-1-.02-1.96-3.16.69-3.83-1.52-3.83-1.52-.52-1.32-1.27-1.67-1.27-1.67-1.04-.71.08-.69.08-.69 1.15.08 1.76 1.18 1.76 1.18 1.02 1.76 2.69 1.25 3.34.96.1-.74.4-1.25.72-1.54-2.52-.29-5.18-1.26-5.18-5.6 0-1.24.44-2.25 1.17-3.04-.12-.29-.51-1.45.11-3.02 0 0 .96-.31 3.15 1.16.91-.25 1.89-.38 2.86-.38.97 0 1.95.13 2.86.38 2.18-1.47 3.14-1.16 3.14-1.16.62 1.57.23 2.73.11 3.02.73.79 1.17 1.8 1.17 3.04 0 4.35-2.67 5.31-5.21 5.59.41.35.78 1.05.78 2.12 0 1.53-.01 2.76-.01 3.14 0 .31.21.66.79.55 4.5-1.5 7.75-5.75 7.75-10.77C23.34 5.57 18.27.5 12 .5Z"/></svg>`;
+const SIROS_CSS = `
+  :root { --siros-blue: #1C4587; --siros-light: #f0f4f8; --c-success: #1a7f37; --c-info: #8250df; --c-fail: #cf222e; --c-warn: #9a6700; --c-skip: #8b949e; --c-review: #0969da; }
+  * { box-sizing: border-box; }
+  body { font-family: 'Helvetica Neue', Arial, system-ui, sans-serif; margin: 0; color: #24292f; background: #fff; }
+  .navbar { background: #fff; border-bottom: 1px solid #e0e0e0; position: sticky; top: 0; z-index: 100; }
+  .navbar-inner { max-width: 1400px; margin: 0 auto; padding: 0.6rem 2rem; display: flex; align-items: center; }
+  .navbar-brand { display: flex; align-items: center; gap: 0.6rem; text-decoration: none; color: #1C4587; font-weight: 600; font-size: 1.1rem; }
+  .navbar-brand img { height: 40px; width: auto; }
+  .navbar-links { margin-left: auto; display: flex; gap: 1.25rem; align-items: center; }
+  .navbar-links a { color: #555; text-decoration: none; font-size: 0.875rem; font-weight: 500; transition: color 0.2s; }
+  .navbar-links a:hover { color: #1C4587; }
+  .navbar-links svg { width: 20px; height: 20px; fill: #555; transition: fill 0.2s; }
+  .navbar-links a:hover svg { fill: #1C4587; }
+  main.container { max-width: 1400px; margin: 0 auto; padding: 1.5rem 2rem 3rem; }
+  h1 { border-bottom: 2px solid var(--siros-blue); padding-bottom: .5rem; color: var(--siros-blue); }
+  h2 { color: var(--siros-blue); margin-top: 2rem; }
+  table { border-collapse: collapse; width: 100%; margin: 1rem 0; }
+  th, td { border: 1px solid #d0d7de; padding: .5rem .75rem; text-align: left; }
+  th { background: var(--siros-light); color: var(--siros-blue); font-weight: 600; }
+  a { color: var(--siros-blue); }
+  .pass { color: var(--c-success); } .fail { color: var(--c-fail); } .warn { color: var(--c-warn); }
+  details { margin: 1rem 0; }
+  summary { cursor: pointer; font-weight: 600; color: var(--siros-blue); }
+  code { background: var(--siros-light); padding: .15em .35em; border-radius: 3px; font-size: .9em; }
+  .stats-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: 1rem; margin: 1.5rem 0; }
+  .stat-card { background: var(--siros-light); border-radius: 8px; padding: 1rem; text-align: center; border: 1px solid #d0d7de; }
+  .stat-card .number { font-size: 1.75rem; font-weight: 700; color: var(--siros-blue); }
+  .stat-card .label { font-size: .85rem; color: #57606a; margin-top: .25rem; }
+  .breadcrumb { font-size: .9rem; color: #57606a; margin-bottom: 1rem; }
+  .breadcrumb a { color: var(--siros-blue); }
+  .footer { border-top: 1px solid #e0e0e0; margin-top: 3rem; padding: 2.5rem 0; font-size: 0.875rem; color: #555; }
+  .footer-inner { max-width: 1400px; margin: 0 auto; padding: 0 2rem; display: flex; align-items: flex-start; justify-content: space-between; gap: 2rem; }
+  .footer-address { display: flex; flex-direction: column; gap: 0.25rem; }
+  .footer-address a { color: #555; text-decoration: none; transition: color 0.2s; }
+  .footer-address a:hover { color: #1C4587; }
+  .footer-address address { font-style: normal; }
+  .footer-org { font-weight: 600; color: #1a1a1a; margin: 0; }
+  .footer-org a { color: inherit; text-decoration: none; }
+  .footer-org a:hover { color: #1C4587; }
+  .footer-nav { display: flex; align-items: center; gap: 1.5rem; flex-wrap: wrap; padding-top: 0.5rem; }
+  .footer-nav a { color: #555; text-decoration: none; transition: color 0.2s; }
+  .footer-nav a:hover { color: #1C4587; }
+  .footer-nav svg { width: 20px; height: 20px; fill: #555; transition: fill 0.2s; }
+  .footer-nav a:hover svg { fill: #1C4587; }
+  .build-info { font-size: 0.75rem; color: #888; margin-top: 1rem; }
+  .build-info a { color: inherit; }
+  @media (max-width: 640px) {
+    .footer-inner { flex-direction: column; gap: 1.5rem; }
+    .footer-nav { justify-content: flex-start; }
+  }
+  .cbar { display: flex; height: 18px; border-radius: 4px; overflow: hidden; min-width: 120px; border: 1px solid #d0d7de; }
+  .cbar span { display: block; height: 100%; }
+  .cbar-success { background: var(--c-success); }
+  .cbar-info { background: var(--c-info); }
+  .cbar-fail { background: var(--c-fail); }
+  .cbar-warn { background: var(--c-warn); }
+  .cbar-skip { background: var(--c-skip); }
+  .cbar-review { background: var(--c-review); }
+  .cbar-legend { display: flex; flex-wrap: wrap; gap: .5rem; font-size: .8rem; margin-top: .25rem; }
+  .cbar-legend span { display: flex; align-items: center; gap: .2rem; }
+  .cbar-legend .dot { width: 10px; height: 10px; border-radius: 2px; display: inline-block; }
+  .cbar-wrap { min-width: 180px; }
+`;
+const PROFILE_LABELS = { 'wallet-vci': 'OID4VCI Wallet', 'wallet-vp': 'OID4VP Wallet', 'issuer': 'OID4VCI Issuer', 'verifier': 'OID4VP Verifier', 'mini-wallet': 'OID4VCI Wallet — mini (the raw Rust engine)', 'mini-wallet-vp': 'OID4VP Wallet — mini (the raw Rust engine)' };
+const COND_CATS = [
+  { key: 'SUCCESS',  cls: 'cbar-success', color: '#1a7f37', label: 'Success' },
+  { key: 'INFO',     cls: 'cbar-info',    color: '#8250df', label: 'Info' },
+  { key: 'WARNING',  cls: 'cbar-warn',    color: '#9a6700', label: 'Warning' },
+  { key: 'REVIEW',   cls: 'cbar-review',  color: '#0969da', label: 'Review' },
+  { key: 'FAILURE',  cls: 'cbar-fail',    color: '#cf222e', label: 'Failure' },
+  { key: 'SKIPPED',  cls: 'cbar-skip',    color: '#8b949e', label: 'Skipped' },
+];
+
 // ── Helpers ────────────────────────────────────────────────────────────────
 
 function run(cmd, opts = {}) {
@@ -50,18 +127,35 @@ function ensureDir(dir) {
 }
 
 // ── Collect summary files ──────────────────────────────────────────────────
+// Reindex mode reads the run dir in the gh-pages worktree instead (see the
+// --reindex block below the worktree setup), so no results dir is touched.
 
-const summaryFiles = fs.readdirSync(resultsDir).filter(f => f.endsWith('-summary.json'));
-const zipFiles = fs.readdirSync(resultsDir).filter(f => f.endsWith('.zip'));
+const reindexRun = getFlag('--reindex');
+let summaryFiles = [];
+let zipFiles = [];
+let summaries = [];
 
-if (summaryFiles.length === 0 && zipFiles.length === 0) {
-  console.log('No results to publish');
-  process.exit(0);
+if (!reindexRun) {
+  summaryFiles = fs.readdirSync(resultsDir).filter(f => f.endsWith('-summary.json'));
+  zipFiles = fs.readdirSync(resultsDir).filter(f => f.endsWith('.zip'));
+
+  if (summaryFiles.length === 0 && zipFiles.length === 0) {
+    console.log('No results to publish');
+    process.exit(0);
+  }
+  if (zipFiles.length > 0 && summaryFiles.length === 0) {
+    // The empty-run class: exported ZIPs render (extracted under the
+    // fallback profile) but the run's index has no summaries to index, so
+    // the page shows a bare header with nothing under it. A publish without
+    // summaries is a mistake, not a state to keep.
+    console.error('Refusing to publish: the results carry exported ZIPs but no summaries - the set cannot be indexed and would render empty. (The specs write the summaries; a summary-less dir means they did not run or their output was lost.)');
+    process.exit(1);
+  }
+
+  summaries = summaryFiles.map(f =>
+    JSON.parse(fs.readFileSync(path.join(resultsDir, f), 'utf-8'))
+  );
 }
-
-const summaries = summaryFiles.map(f =>
-  JSON.parse(fs.readFileSync(path.join(resultsDir, f), 'utf-8'))
-);
 
 // ── Set up gh-pages worktree ───────────────────────────────────────────────
 
@@ -90,6 +184,34 @@ if (ghPagesExists) {
   run(`git worktree add --detach ${pagesDir}`);
   run('git checkout --orphan gh-pages', { cwd: pagesDir });
   run('git rm -rf . 2>/dev/null || true', { cwd: pagesDir });
+}
+
+// ── Reindex an existing run ────────────────────────────────────────────────
+// --reindex <runDirName>: regenerate one run's index.html from the summaries
+// sitting in its directory (a summary repaired in place), plus the top-level
+// index. No new results, no re-extraction - the run's extracted reports stay
+// as they are. The maintenance path for a run whose summaries were wrong or
+// missing.
+
+if (reindexRun) {
+  const reindexDir = path.join(pagesDir, collection, reindexRun);
+  if (!fs.existsSync(reindexDir)) {
+    console.error(`No such run in the ${collection} collection: ${reindexRun}`);
+    process.exit(1);
+  }
+  const reindexSummaries = fs.readdirSync(reindexDir)
+    .filter(f => f.endsWith('-summary.json'))
+    .map(f => JSON.parse(fs.readFileSync(path.join(reindexDir, f), 'utf-8')));
+  if (reindexSummaries.length === 0) {
+    console.error(`No summaries found in ${collection}/${reindexRun} - nothing to index`);
+    process.exit(1);
+  }
+  fs.writeFileSync(path.join(reindexDir, 'index.html'), generateRunIndex(reindexRun, reindexSummaries, runUrl));
+  fs.writeFileSync(path.join(pagesDir, 'index.html'), generateTopIndex(pagesDir, pagesBase));
+  fs.writeFileSync(path.join(pagesDir, '.nojekyll'), '');
+  console.log(`Reindexed ${pagesBase}/${collection}/${reindexRun}/`);
+  commitAndPush(`Reindex ${collection}/${reindexRun}`);
+  process.exit(0);
 }
 
 // ── Create run directory ───────────────────────────────────────────────────
@@ -137,7 +259,6 @@ if (fs.existsSync(logoSrc)) {
 
 // ── Generate per-run index.html ────────────────────────────────────────────
 
-const GITHUB_SVG = `<svg viewBox="0 0 24 24" width="20" height="20" fill="currentColor" aria-hidden="true"><path fill-rule="evenodd" clip-rule="evenodd" d="M12 .5C5.73.5.66 5.57.66 11.84c0 5.02 3.25 9.27 7.76 10.77.57.1.78-.25.78-.55 0-.27-.01-1-.02-1.96-3.16.69-3.83-1.52-3.83-1.52-.52-1.32-1.27-1.67-1.27-1.67-1.04-.71.08-.69.08-.69 1.15.08 1.76 1.18 1.76 1.18 1.02 1.76 2.69 1.25 3.34.96.1-.74.4-1.25.72-1.54-2.52-.29-5.18-1.26-5.18-5.6 0-1.24.44-2.25 1.17-3.04-.12-.29-.51-1.45.11-3.02 0 0 .96-.31 3.15 1.16.91-.25 1.89-.38 2.86-.38.97 0 1.95.13 2.86.38 2.18-1.47 3.14-1.16 3.14-1.16.62 1.57.23 2.73.11 3.02.73.79 1.17 1.8 1.17 3.04 0 4.35-2.67 5.31-5.21 5.59.41.35.78 1.05.78 2.12 0 1.53-.01 2.76-.01 3.14 0 .31.21.66.79.55 4.5-1.5 7.75-5.75 7.75-10.77C23.34 5.57 18.27.5 12 .5Z"/></svg>`;
 
 // Post-process conformance suite report HTML to inject SIROS branding.
 // Uses marker comments (<!-- siros:brand:* -->) so branding can be cleanly
@@ -252,69 +373,6 @@ function brandExtractedReports(runDir, runId, meta = {}) {
   walkDir(runDir);
 }
 
-const SIROS_CSS = `
-  :root { --siros-blue: #1C4587; --siros-light: #f0f4f8; --c-success: #1a7f37; --c-info: #8250df; --c-fail: #cf222e; --c-warn: #9a6700; --c-skip: #8b949e; --c-review: #0969da; }
-  * { box-sizing: border-box; }
-  body { font-family: 'Helvetica Neue', Arial, system-ui, sans-serif; margin: 0; color: #24292f; background: #fff; }
-  .navbar { background: #fff; border-bottom: 1px solid #e0e0e0; position: sticky; top: 0; z-index: 100; }
-  .navbar-inner { max-width: 1400px; margin: 0 auto; padding: 0.6rem 2rem; display: flex; align-items: center; }
-  .navbar-brand { display: flex; align-items: center; gap: 0.6rem; text-decoration: none; color: #1C4587; font-weight: 600; font-size: 1.1rem; }
-  .navbar-brand img { height: 40px; width: auto; }
-  .navbar-links { margin-left: auto; display: flex; gap: 1.25rem; align-items: center; }
-  .navbar-links a { color: #555; text-decoration: none; font-size: 0.875rem; font-weight: 500; transition: color 0.2s; }
-  .navbar-links a:hover { color: #1C4587; }
-  .navbar-links svg { width: 20px; height: 20px; fill: #555; transition: fill 0.2s; }
-  .navbar-links a:hover svg { fill: #1C4587; }
-  main.container { max-width: 1400px; margin: 0 auto; padding: 1.5rem 2rem 3rem; }
-  h1 { border-bottom: 2px solid var(--siros-blue); padding-bottom: .5rem; color: var(--siros-blue); }
-  h2 { color: var(--siros-blue); margin-top: 2rem; }
-  table { border-collapse: collapse; width: 100%; margin: 1rem 0; }
-  th, td { border: 1px solid #d0d7de; padding: .5rem .75rem; text-align: left; }
-  th { background: var(--siros-light); color: var(--siros-blue); font-weight: 600; }
-  a { color: var(--siros-blue); }
-  .pass { color: var(--c-success); } .fail { color: var(--c-fail); } .warn { color: var(--c-warn); }
-  details { margin: 1rem 0; }
-  summary { cursor: pointer; font-weight: 600; color: var(--siros-blue); }
-  code { background: var(--siros-light); padding: .15em .35em; border-radius: 3px; font-size: .9em; }
-  .stats-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: 1rem; margin: 1.5rem 0; }
-  .stat-card { background: var(--siros-light); border-radius: 8px; padding: 1rem; text-align: center; border: 1px solid #d0d7de; }
-  .stat-card .number { font-size: 1.75rem; font-weight: 700; color: var(--siros-blue); }
-  .stat-card .label { font-size: .85rem; color: #57606a; margin-top: .25rem; }
-  .breadcrumb { font-size: .9rem; color: #57606a; margin-bottom: 1rem; }
-  .breadcrumb a { color: var(--siros-blue); }
-  .footer { border-top: 1px solid #e0e0e0; margin-top: 3rem; padding: 2.5rem 0; font-size: 0.875rem; color: #555; }
-  .footer-inner { max-width: 1400px; margin: 0 auto; padding: 0 2rem; display: flex; align-items: flex-start; justify-content: space-between; gap: 2rem; }
-  .footer-address { display: flex; flex-direction: column; gap: 0.25rem; }
-  .footer-address a { color: #555; text-decoration: none; transition: color 0.2s; }
-  .footer-address a:hover { color: #1C4587; }
-  .footer-address address { font-style: normal; }
-  .footer-org { font-weight: 600; color: #1a1a1a; margin: 0; }
-  .footer-org a { color: inherit; text-decoration: none; }
-  .footer-org a:hover { color: #1C4587; }
-  .footer-nav { display: flex; align-items: center; gap: 1.5rem; flex-wrap: wrap; padding-top: 0.5rem; }
-  .footer-nav a { color: #555; text-decoration: none; transition: color 0.2s; }
-  .footer-nav a:hover { color: #1C4587; }
-  .footer-nav svg { width: 20px; height: 20px; fill: #555; transition: fill 0.2s; }
-  .footer-nav a:hover svg { fill: #1C4587; }
-  .build-info { font-size: 0.75rem; color: #888; margin-top: 1rem; }
-  .build-info a { color: inherit; }
-  @media (max-width: 640px) {
-    .footer-inner { flex-direction: column; gap: 1.5rem; }
-    .footer-nav { justify-content: flex-start; }
-  }
-  .cbar { display: flex; height: 18px; border-radius: 4px; overflow: hidden; min-width: 120px; border: 1px solid #d0d7de; }
-  .cbar span { display: block; height: 100%; }
-  .cbar-success { background: var(--c-success); }
-  .cbar-info { background: var(--c-info); }
-  .cbar-fail { background: var(--c-fail); }
-  .cbar-warn { background: var(--c-warn); }
-  .cbar-skip { background: var(--c-skip); }
-  .cbar-review { background: var(--c-review); }
-  .cbar-legend { display: flex; flex-wrap: wrap; gap: .5rem; font-size: .8rem; margin-top: .25rem; }
-  .cbar-legend span { display: flex; align-items: center; gap: .2rem; }
-  .cbar-legend .dot { width: 10px; height: 10px; border-radius: 2px; display: inline-block; }
-  .cbar-wrap { min-width: 180px; }
-`;
 
 function htmlHeader(title, extra = '') {
   return `<!DOCTYPE html>
@@ -371,17 +429,8 @@ function htmlFooter() {
 </html>`;
 }
 
-const PROFILE_LABELS = { 'wallet-vci': 'OID4VCI Wallet', 'wallet-vp': 'OID4VP Wallet', 'issuer': 'OID4VCI Issuer', 'verifier': 'OID4VP Verifier', 'mini-wallet': 'OID4VCI Wallet — mini (the raw Rust engine)', 'mini-wallet-vp': 'OID4VP Wallet — mini (the raw Rust engine)' };
 
 // Condition categories in display order (left→right in the bar)
-const COND_CATS = [
-  { key: 'SUCCESS',  cls: 'cbar-success', color: '#1a7f37', label: 'Success' },
-  { key: 'INFO',     cls: 'cbar-info',    color: '#8250df', label: 'Info' },
-  { key: 'WARNING',  cls: 'cbar-warn',    color: '#9a6700', label: 'Warning' },
-  { key: 'REVIEW',   cls: 'cbar-review',  color: '#0969da', label: 'Review' },
-  { key: 'FAILURE',  cls: 'cbar-fail',    color: '#cf222e', label: 'Failure' },
-  { key: 'SKIPPED',  cls: 'cbar-skip',    color: '#8b949e', label: 'Skipped' },
-];
 
 function conditionBar(counts, opts = {}) {
   if (!counts || Object.keys(counts).length === 0) return '<span style="color:#8b949e">—</span>';
@@ -712,21 +761,25 @@ fs.writeFileSync(path.join(pagesDir, '.nojekyll'), '');
 
 // ── Commit and push ────────────────────────────────────────────────────────
 
-try {
-  run('git config user.email "github-actions[bot]@users.noreply.github.com"', { cwd: pagesDir });
-  run('git config user.name "github-actions[bot]"', { cwd: pagesDir });
-  run('git add -A', { cwd: pagesDir });
-  const status = run('git status --porcelain', { cwd: pagesDir });
-  if (status) {
-    run(`git commit -m "Conformance results for run ${runId}"`, { cwd: pagesDir });
-    run('git push origin gh-pages', { cwd: pagesDir });
-    console.log(`Published results to ${pagesBase}/${collection}/${runId}/`);
-  } else {
-    console.log('No changes to publish');
+function commitAndPush(message) {
+  try {
+    run('git config user.email "github-actions[bot]@users.noreply.github.com"', { cwd: pagesDir });
+    run('git config user.name "github-actions[bot]"', { cwd: pagesDir });
+    run('git add -A', { cwd: pagesDir });
+    const status = run('git status --porcelain', { cwd: pagesDir });
+    if (status) {
+      run(`git commit -m ${JSON.stringify(message)}`, { cwd: pagesDir });
+      run('git push origin gh-pages', { cwd: pagesDir });
+      if (!reindexRun) console.log(`Published results to ${pagesBase}/${collection}/${runId}/`);
+    } else {
+      console.log('No changes to publish');
+    }
+  } finally {
+    try { run(`git worktree remove --force ${pagesDir}`); } catch {}
   }
-} finally {
-  try { run(`git worktree remove --force ${pagesDir}`); } catch {}
 }
+
+commitAndPush(`Conformance results for run ${runId}`);
 
 // ── Output the pages URL for downstream steps ─────────────────────────────
 
