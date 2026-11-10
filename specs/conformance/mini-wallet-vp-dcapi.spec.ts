@@ -29,13 +29,24 @@ const HAIP_CONFIG_PATH = path.resolve(
 // The suite's browser page origin — the DC API caller the engine's
 // §8.4 binding checks and the KB-JWT's aud name.
 const ORIGIN = 'https://localhost.emobix.co.uk:8443';
-// The module group's variant axes (the plan fixes them per module; the
-// runner create resolves them from this override).
-const MODULE_VARIANT = {
-  client_id_prefix: 'x509_hash',
-  request_method: 'request_uri_signed',
-  vp_profile: 'haip',
-};
+// The three module groups of the haip plan's dc_api variant: the
+// signed compact form, the unsigned web-origin form, and the
+// multi-signed general JWS. The plan fixes the axes per module; the
+// runner create resolves them from the override.
+const GROUPS = [
+  {
+    name: 'x509_hash / request_uri_signed',
+    variant: { client_id_prefix: 'x509_hash', request_method: 'request_uri_signed', vp_profile: 'haip' },
+  },
+  {
+    name: 'web-origin / request_uri_unsigned',
+    variant: { client_id_prefix: 'web-origin', request_method: 'request_uri_unsigned', vp_profile: 'haip' },
+  },
+  {
+    name: 'x509_hash / request_uri_multisigned',
+    variant: { client_id_prefix: 'x509_hash', request_method: 'request_uri_multisigned', vp_profile: 'haip' },
+  },
+];
 
 test.describe('Mini-wallet (the raw Rust engine core) — OID4VP dc_api', () => {
   const api = new ConformanceAPI(CONFORMANCE_URL);
@@ -55,7 +66,9 @@ test.describe('Mini-wallet (the raw Rust engine core) — OID4VP dc_api', () => 
     test.skip(!conformanceReady, 'Conformance suite not available');
   });
 
-  test('should pass the dc_api module group against the raw engine', async ({ page }) => {
+  for (const group of GROUPS) {
+    test.describe(`Group: ${group.name}`, () => {
+      test('should pass the dc_api module group against the raw engine', async ({ page }) => {
     test.setTimeout(1_800_000);
 
     const config = JSON.parse(fs.readFileSync(HAIP_CONFIG_PATH, 'utf8'));
@@ -65,16 +78,17 @@ test.describe('Mini-wallet (the raw Rust engine core) — OID4VP dc_api', () => 
       response_mode: 'dc_api.jwt',
     });
     const planId = plan.id;
-    // The x509_hash / request_uri_signed group's modules.
+    // This group's modules (the plan fixes the axes per module).
     const planModules = plan.modules
       .filter((m: any) => {
         const v = m.variant || {};
         return (
-          v.client_id_prefix === 'x509_hash' && v.request_method === 'request_uri_signed'
+          v.client_id_prefix === group.variant.client_id_prefix &&
+          v.request_method === group.variant.request_method
         );
       })
       .map((m: any) => m.testModule);
-    console.log(`[mini-wallet-vp-dcapi] plan ${planId}: ${planModules.length} modules`);
+    console.log(`[mini-wallet-vp-dcapi] plan ${planId} (${group.name}): ${planModules.length} modules`);
 
     const results: Array<{
       module: string;
@@ -90,7 +104,7 @@ test.describe('Mini-wallet (the raw Rust engine core) — OID4VP dc_api', () => 
       const moduleInfo = await api.createTestFromPlanWithVariant(
         planId,
         moduleName,
-        MODULE_VARIANT
+        group.variant
       );
       const moduleId = moduleInfo.id;
 
@@ -122,19 +136,31 @@ test.describe('Mini-wallet (the raw Rust engine core) — OID4VP dc_api', () => 
       // The browser API request and the submit URL from the module's
       // log — the {digital: {requests: [...]}} payload the browser
       // delivers, and the URL the suite's own page posts the answer
-      // to.
+      // to. Three protocols: the signed compact JWS (a text request),
+      // the multisigned general JWS (an OBJECT with payload +
+      // signatures), the unsigned web-origin form (the plain request
+      // object as the data itself).
       const log = (await api.getTestLog(moduleId)) as any[];
       let requestJwt = '';
+      let requestData: any = null;
+      let protocol = '';
       let submitUrl = '';
       for (const entry of log) {
-        if (entry.request?.digital?.requests?.[0]?.data?.request) {
-          requestJwt = entry.request.digital.requests[0].data.request;
+        if (entry.request?.digital?.requests) {
+          const req = entry.request.digital.requests[0];
+          protocol = req.protocol;
+          requestJwt = typeof req.data.request === 'string'
+            ? req.data.request
+            : req.data.request
+              ? JSON.stringify(req.data.request)
+              : '';
+          if (!requestJwt) requestData = req.data;
         }
         if (entry.browser_api_submit?.fullUrl) {
           submitUrl = entry.browser_api_submit.fullUrl;
         }
       }
-      if (!requestJwt || !submitUrl) {
+      if ((!requestJwt && !requestData) || !submitUrl) {
         console.log(`${moduleName}: no browser API request or submit URL`);
         results.push({
           module: moduleName,
@@ -145,12 +171,15 @@ test.describe('Mini-wallet (the raw Rust engine core) — OID4VP dc_api', () => 
         continue;
       }
 
-      // The mini-wallet page: the request by value, with the caller's
-      // origin beside it.
-      await page.goto(
-        `${MINI_WALLET_URL}?request=${encodeURIComponent(requestJwt)}&origin=${encodeURIComponent(ORIGIN)}`,
-        { waitUntil: 'domcontentloaded', timeout: 30000 }
-      );
+      // The mini-wallet page: the caller's origin beside the request —
+      // the compact/multisigned JWS text by value (?request=), the
+      // unsigned protocol's plain request object (?dcreq= base64url).
+      const pageUrl = requestJwt
+        ? `${MINI_WALLET_URL}?request=${encodeURIComponent(requestJwt)}&origin=${encodeURIComponent(ORIGIN)}`
+        : `${MINI_WALLET_URL}?dcreq=${encodeURIComponent(
+            Buffer.from(JSON.stringify(requestData)).toString('base64url')
+          )}&origin=${encodeURIComponent(ORIGIN)}`;
+      await page.goto(pageUrl, { waitUntil: 'domcontentloaded', timeout: 30000 });
       await page.waitForTimeout(8000);
       const flowState = await page.getAttribute('body', 'data-flow-state');
       console.log(`${moduleName}: flow ${flowState}`);
@@ -165,7 +194,7 @@ test.describe('Mini-wallet (the raw Rust engine core) — OID4VP dc_api', () => 
         const res = await page.request.fetch(submitUrl, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          data: { protocol: 'openid4vp-v1-signed', data: dcApiData },
+          data: { protocol: protocol || 'openid4vp-v1-signed', data: dcApiData },
           failOnStatusCode: false,
           ignoreHTTPSErrors: true,
         });
@@ -246,5 +275,7 @@ test.describe('Mini-wallet (the raw Rust engine core) — OID4VP dc_api', () => 
       failures,
       `suite failures: ${JSON.stringify(failures, null, 2)}`
     ).toHaveLength(0);
-  });
+      });
+    });
+  }
 });

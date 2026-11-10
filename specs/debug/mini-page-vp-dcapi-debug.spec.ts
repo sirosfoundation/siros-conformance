@@ -29,8 +29,8 @@ const VP_MODULE = process.env.VP_MODULE || 'oid4vp-1final-wallet-happy-flow';
 // The module group's variant axes (the plan fixes them per module;
 // the runner create resolves them from this override).
 const MODULE_VARIANT = {
-  client_id_prefix: 'x509_hash',
-  request_method: 'request_uri_signed',
+  client_id_prefix: process.env.VP_CLIENT_ID_PREFIX || 'x509_hash',
+  request_method: process.env.VP_REQUEST_METHOD || 'request_uri_signed',
   vp_profile: 'haip',
 };
 
@@ -75,30 +75,40 @@ test('drive one dc_api module through the mini-wallet page', async ({ page }) =>
   // the response to.
   const log = (await api.getTestLog(moduleId)) as any[];
   let requestJwt = '';
+  let requestData: any = null;
+  let protocol = '';
   let submitUrl = '';
   for (const entry of log) {
-    if (entry.request?.digital?.requests?.[0]?.data?.request) {
-      requestJwt = entry.request.digital.requests[0].data.request;
-      console.log('REQUEST PROTOCOL:', entry.request.digital.requests[0].protocol);
+    if (entry.request?.digital?.requests) {
+      const req = entry.request.digital.requests[0];
+      protocol = req.protocol;
+      // The multisigned protocol carries the general JWS as a JSON
+      // OBJECT; the others carry the compact JWS as text.
+      requestJwt = typeof req.data.request === 'string'
+        ? req.data.request
+        : JSON.stringify(req.data.request);
+      if (!requestJwt) requestData = req.data;
+      console.log('REQUEST PROTOCOL:', protocol, '| request form:', requestJwt ? (requestJwt.trim().startsWith('{') ? 'general JWS' : 'compact') : 'plain data');
     }
     if (entry.browser_api_submit?.fullUrl) {
       submitUrl = entry.browser_api_submit.fullUrl;
     }
   }
-  console.log('REQUEST JWT:', requestJwt.slice(0, 60), '…');
   console.log('SUBMIT URL:', submitUrl);
-  if (!requestJwt || !submitUrl) {
+  if ((!requestJwt && !requestData) || !submitUrl) {
     throw new Error('the module exposed no browser API request or submit URL');
   }
 
-  // The mini-wallet page: the request arrives by value (the JWT),
-  // with the caller's origin beside it (the suite's browser page
-  // origin — the module's alias base).
+  // The mini-wallet page: the caller's origin beside the request —
+  // the signed protocol's JWT by value (?request=), the unsigned
+  // protocol's plain request object (?dcreq= base64url).
   const origin = 'https://localhost.emobix.co.uk:8443';
-  await page.goto(
-    `${MINI_WALLET_URL}?request=${encodeURIComponent(requestJwt)}&origin=${encodeURIComponent(origin)}`,
-    { waitUntil: 'domcontentloaded', timeout: 30000 }
-  );
+  const pageUrl = requestJwt
+    ? `${MINI_WALLET_URL}?request=${encodeURIComponent(requestJwt)}&origin=${encodeURIComponent(origin)}`
+    : `${MINI_WALLET_URL}?dcreq=${encodeURIComponent(
+        Buffer.from(JSON.stringify(requestData)).toString('base64url')
+      )}&origin=${encodeURIComponent(origin)}`;
+  await page.goto(pageUrl, { waitUntil: 'domcontentloaded', timeout: 30000 });
   await page.waitForTimeout(10000);
 
   console.log('PAGE PARAMS SENT:', await page.evaluate(() => {
@@ -125,7 +135,7 @@ test('drive one dc_api module through the mini-wallet page', async ({ page }) =>
     const res = await page.request.fetch(submitUrl, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      data: { protocol: 'openid4vp-v1-signed', data: dcApiData },
+      data: { protocol: protocol || 'openid4vp-v1-signed', data: dcApiData },
       failOnStatusCode: false,
       ignoreHTTPSErrors: true,
     });
