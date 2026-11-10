@@ -1,0 +1,44 @@
+{
+  "run": "mini-wallet — the complete Digital Credentials API channel against the raw Rust engine (all three module groups)",
+  "date": "2026-11-10",
+  "suite": {
+    "url": "https://localhost.emobix.co.uk:8443/",
+    "version": "5.3.4",
+    "plan": "oid4vp-1final-wallet-haip-test-plan",
+    "alias": "siros-wallet-vp-test",
+    "variant": "sd_jwt_vc / eudi_pid / dc_api.jwt / haip — all three request-method groups"
+  },
+  "wallet": {
+    "harness": "engine-adapter-wasm's mini-wallet page (target/wasm-page)",
+    "engine": "siros-wallet-core",
+    "engine_commit": "3a94dfd",
+    "profile": "mini-wallet (wallet-frontend and go-wallet-backend disabled; the harness plays the browser's role — the engine's flow completes with the DigitalCredential's data and the spec hands it to the module's browser API submit URL, exactly as the suite's own page does)"
+  },
+  "groups": [
+    {
+      "name": "x509_hash / request_uri_signed",
+      "plan_id": "Rr5YsJYnx4mhy",
+      "report": "conformance-report-Rr5YsJYnx4mhy.zip",
+      "modules": "19: 11 PASSED, 8 REVIEW"
+    },
+    {
+      "name": "web-origin / request_uri_unsigned",
+      "plan_id": "iplK6YpnVeqVS",
+      "report": "conformance-report-iplK6YpnVeqVS.zip",
+      "modules": "14: 10 PASSED, 4 REVIEW"
+    },
+    {
+      "name": "x509_hash / request_uri_multisigned",
+      "plan_id": "DVGvjpRfRL20v",
+      "report": "conformance-report-DVGvjpRfRL20v.zip",
+      "modules": "20: 12 PASSED (including multisigned-one-invalid-signature and required-non-matching), 8 REVIEW"
+    }
+  ],
+  "engine_wire": [
+    "The multi-signed request object (RFC 7515 §7.2, the JWS JSON Serialization): every signature verifies through its compact-equivalent against the x5c in its own protected header; at least one valid signature authenticates the verifier (one invalid is skipped — the module leaves the second valid on purpose); the client_id rides the signatures' protected headers, the first VERIFIED one's binding the wallet runs its scheme rules against",
+    "§5.9.2's bounds on the pre-registered fallback: an unknown-prefixed client_id names a pre-registered client only on an UNSIGNED request; a signed request's unknown prefix refuses, and a value embedding a recognized prefix can never be pre-registered",
+    "The web-origin form: a request with no client_id — the caller's origin IS the client (the transport's input fills it)",
+    "The origin binding is enforced for an authenticated verifier (a recognized Client Identifier Prefix or a signed request object); the unsigned pre-registered fallback's expected_origins is advisory"
+  ],
+  "notes": "REVIEW is the negative modules' expected outcome: the wallet refused each invalid request for the right reason, the browser API's promise rejection posted to the module's submit URL, and the tester's error-screen placeholder uploaded through the suite's API. Reproduce with: make wasm-page in siros-wallet-core, then npx playwright test specs/conformance/mini-wallet-vp-dcapi.spec.ts here (the spec runs all three groups)."
+}
