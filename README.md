@@ -111,6 +111,15 @@ npx playwright test specs/conformance/oid4vci-wallet.spec.ts --grep "mdoc.*defer
 `SIROS_VERIFIER_CORE_IMAGE` to test another core image. See the
 [core setup guide](docs/verifier-core.md).
 
+## The release-conformance pull (conformance.siros.org)
+
+Each core repo's release ships its conformance verdict as release assets; this
+repo's `publish-releases.yml` pulls them daily (or on demand) and publishes
+them to the site's permanent `releases/<core>/<tag>/` collection — no
+cross-repo credentials anywhere. Adding a repo to the pull, and the contract
+its workflow must satisfy:
+[the release-pull guide](docs/release-pull.md).
+
 ## Image overrides
 
 All Docker images default to `:latest` but can be overridden to test
