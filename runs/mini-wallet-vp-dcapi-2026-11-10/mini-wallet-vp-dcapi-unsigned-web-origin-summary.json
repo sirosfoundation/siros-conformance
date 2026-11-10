@@ -1,0 +1,181 @@
+{
+  "profile": "mini-wallet",
+  "plan": "oid4vp-1final-wallet-haip-test-plan",
+  "planId": "iplK6YpnVeqVS",
+  "variant": "sd_jwt_vc / eudi_pid / web-origin / dc_api.jwt / request_uri_unsigned / haip",
+  "timestamp": "2026-11-10T14:30:00Z",
+  "planDetailUrl": "https://localhost.emobix.co.uk:8443/plan-detail.html?log=iplK6YpnVeqVS",
+  "total": 14,
+  "passed": 11,
+  "failed": 0,
+  "modules": [
+    {
+      "module": "oid4vp-1final-wallet-happy-flow",
+      "status": "FINISHED",
+      "result": "PASSED",
+      "passed": true,
+      "conditions": {
+        "INFO": 6,
+        "SUCCESS": 62
+      },
+      "failures": []
+    },
+    {
+      "module": "oid4vp-1final-wallet-alternate-happy-flow",
+      "status": "FINISHED",
+      "result": "PASSED",
+      "passed": true,
+      "conditions": {
+        "INFO": 6,
+        "SUCCESS": 64
+      },
+      "failures": []
+    },
+    {
+      "module": "oid4vp-1final-wallet-ignores-unusable-encryption-key",
+      "status": "FINISHED",
+      "result": "PASSED",
+      "passed": true,
+      "conditions": {
+        "INFO": 6,
+        "SUCCESS": 62
+      },
+      "failures": []
+    },
+    {
+      "module": "oid4vp-1final-wallet-all-mandatory-claims",
+      "status": "FINISHED",
+      "result": "PASSED",
+      "passed": true,
+      "conditions": {
+        "INFO": 6,
+        "SUCCESS": 63
+      },
+      "failures": []
+    },
+    {
+      "module": "oid4vp-1final-wallet-fewer-claims-than-available",
+      "status": "FINISHED",
+      "result": "PASSED",
+      "passed": true,
+      "conditions": {
+        "INFO": 6,
+        "SUCCESS": 62
+      },
+      "failures": []
+    },
+    {
+      "module": "oid4vp-1final-wallet-optional-credential-set",
+      "status": "FINISHED",
+      "result": "PASSED",
+      "passed": true,
+      "conditions": {
+        "INFO": 6,
+        "SUCCESS": 62
+      },
+      "failures": []
+    },
+    {
+      "module": "oid4vp-1final-wallet-no-claims-in-dcql-query",
+      "status": "FINISHED",
+      "result": "PASSED",
+      "passed": true,
+      "conditions": {
+        "INFO": 6,
+        "SUCCESS": 61
+      },
+      "failures": []
+    },
+    {
+      "module": "oid4vp-1final-wallet-pid-claims-path-array-index",
+      "status": "FINISHED",
+      "result": "PASSED",
+      "passed": true,
+      "conditions": {
+        "INFO": 6,
+        "SUCCESS": 63
+      },
+      "failures": []
+    },
+    {
+      "module": "oid4vp-1final-wallet-pid-claims-path-array-all-elements",
+      "status": "FINISHED",
+      "result": "PASSED",
+      "passed": true,
+      "conditions": {
+        "INFO": 6,
+        "SUCCESS": 63
+      },
+      "failures": []
+    },
+    {
+      "module": "oid4vp-1final-wallet-pid-claims-path-object-member",
+      "status": "FINISHED",
+      "result": "PASSED",
+      "passed": true,
+      "conditions": {
+        "INFO": 6,
+        "SUCCESS": 63
+      },
+      "failures": []
+    },
+    {
+      "module": "oid4vp-1final-wallet-negative-test-missing-nonce",
+      "status": "FINISHED",
+      "result": "REVIEW",
+      "passed": true,
+      "conditions": {
+        "INFO": 6,
+        "SUCCESS": 22,
+        "REVIEW": 1
+      },
+      "failures": []
+    },
+    {
+      "module": "oid4vp-1final-wallet-negative-test-unknown-transaction-data-type",
+      "status": "FINISHED",
+      "result": "REVIEW",
+      "passed": true,
+      "conditions": {
+        "INFO": 6,
+        "SUCCESS": 24,
+        "REVIEW": 1
+      },
+      "failures": []
+    },
+    {
+      "module": "oid4vp-1final-wallet-negative-test-required-non-matching-credential",
+      "status": "FINISHED",
+      "result": "PASSED",
+      "passed": true,
+      "conditions": {
+        "INFO": 6,
+        "SUCCESS": 28
+      },
+      "failures": []
+    },
+    {
+      "module": "oid4vp-1final-wallet-negative-test-claim-not-in-credential",
+      "status": "FINISHED",
+      "result": "REVIEW",
+      "passed": true,
+      "conditions": {
+        "INFO": 6,
+        "SUCCESS": 23,
+        "REVIEW": 1
+      },
+      "failures": []
+    }
+  ],
+  "metadata": {
+    "targetRepo": "sirosfoundation/siros-wallet-core",
+    "targetPr": "",
+    "runId": "mini-wallet-vp-dcapi-2026-11-10",
+    "actor": "leifj",
+    "sha": "3a94dfd",
+    "ref": "refs/heads/main",
+    "images": {},
+    "goldenRelease": "",
+    "wallet": "mini-wallet (engine-adapter-wasm harness page; the raw Rust engine, no wallet-frontend/go-wallet-backend)"
+  }
+}
