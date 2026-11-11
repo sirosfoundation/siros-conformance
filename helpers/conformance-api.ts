@@ -73,6 +73,21 @@ export interface LogEntry {
 
 export type TestState = 'CREATED' | 'CONFIGURED' | 'WAITING' | 'RUNNING' | 'FINISHED' | 'INTERRUPTED';
 
+/**
+ * One module's verdict as the run summaries record it. `conditions` and
+ * `failures` come from the module's test log (see getModuleConditions)
+ * and are what the release pages render per module — a summary written
+ * without them publishes module rows with empty data columns.
+ */
+export interface ModuleResult {
+  module: string;
+  status: string;
+  result: string;
+  passed: boolean;
+  conditions?: Record<string, number>;
+  failures?: Array<{ src: string; msg: string }>;
+}
+
 // =============================================================================
 // API Client
 // =============================================================================

@@ -18,7 +18,7 @@ import { fileURLToPath } from 'url';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
-import { ConformanceAPI, type TestState } from '../../helpers/conformance-api';
+import { ConformanceAPI, type ModuleResult, type TestState } from '../../helpers/conformance-api';
 import { loginUserViaUI } from '../../helpers/ui-actions';
 import { ENV } from '../../helpers/shared-helpers';
 import { WebAuthnHelper } from '../../helpers/webauthn';
@@ -261,12 +261,7 @@ test.describe('OID4VCI Wallet Conformance Suite', () => {
             }
           });
 
-          const results: Array<{
-            module: string;
-            status: string;
-            result: string;
-            passed: boolean;
-          }> = [];
+          const results: ModuleResult[] = [];
 
           for (const moduleName of planModules) {
             console.log(`\n=== Running module: ${moduleName} ===`);

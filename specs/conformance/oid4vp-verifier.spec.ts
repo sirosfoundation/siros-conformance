@@ -18,7 +18,7 @@ import { fileURLToPath } from 'url';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
-import { ConformanceAPI, type TestState } from '../../helpers/conformance-api';
+import { ConformanceAPI, type ModuleResult, type TestState } from '../../helpers/conformance-api';
 import { VC_ENV, checkVCServicesHealth } from '../../helpers/vc-services';
 
 // =============================================================================
@@ -112,6 +112,24 @@ function passingResult(result: string): boolean {
   return result === 'PASSED' || result === 'REVIEW';
 }
 
+// The module's conditions are part of the verdict record, not just
+// console output: the release pages render the per-module condition
+// counts from the summary (publish-pages.mjs's conditionBar), and the
+// wallet specs already persist them — the verifier summary carried
+// only the bare verdict, which is why verifier-core release entries
+// published module rows with empty data columns. Best-effort: a
+// module whose log fetch fails keeps its verdict without conditions.
+async function moduleConditions(
+  api: ConformanceAPI,
+  moduleId: string
+): Promise<{ counts?: Record<string, number>; failures?: Array<{ src: string; msg: string }> }> {
+  try {
+    return await api.getModuleConditions(moduleId);
+  } catch {
+    return { counts: undefined, failures: undefined };
+  }
+}
+
 function loadVerifierConfig(): string {
   let config = fs.readFileSync(VP_VERIFIER_CONFIG_PATH, 'utf-8');
   const discoveryPath = IS_CORE ? '/OIDC/.well-known/openid-configuration' : '/.well-known/openid-configuration';
@@ -202,12 +220,7 @@ test.describe('OID4VP Verifier/RP Conformance Suite', () => {
         expect(planId).toBeDefined();
         expect(planModules.length).toBeGreaterThan(0);
 
-        const results: Array<{
-          module: string;
-          status: string;
-          result: string;
-          passed: boolean;
-        }> = [];
+        const results: ModuleResult[] = [];
 
         for (const moduleName of planModules) {
           console.log(`\n=== Running verifier module: ${moduleName} ===`);
@@ -233,11 +246,14 @@ test.describe('OID4VP Verifier/RP Conformance Suite', () => {
           if (state === 'FINISHED') {
             const info = await api.getModuleInfo(moduleId);
             console.log(`Module ${moduleName} finished: ${info.result}`);
+            const conditions = await moduleConditions(api, moduleId);
             results.push({
               module: moduleName,
               status: info.status,
               result: info.result,
               passed: passingResult(info.result),
+              conditions: conditions.counts,
+              failures: conditions.failures,
             });
             continue;
           }
@@ -305,6 +321,8 @@ test.describe('OID4VP Verifier/RP Conformance Suite', () => {
           const finalInfo = await api.getModuleInfo(moduleId);
           console.log(`Module ${moduleName} result: ${finalInfo.result}`);
 
+          const conditions = await moduleConditions(api, moduleId);
+
           if (!passingResult(finalInfo.result)) {
             try {
               const logs = await api.getTestLog(moduleId);
@@ -325,6 +343,8 @@ test.describe('OID4VP Verifier/RP Conformance Suite', () => {
             status: finalInfo.status,
             result: finalInfo.result,
             passed: passingResult(finalInfo.result),
+            conditions: conditions.counts,
+            failures: conditions.failures,
           });
         }
 
