@@ -1,0 +1,4 @@
+module siros_verifier_core_ffiFFI {
+    header "siros_verifier_core_ffiFFI.h"
+    export *
+}
