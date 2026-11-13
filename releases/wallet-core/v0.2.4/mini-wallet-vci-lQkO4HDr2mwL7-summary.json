@@ -1,0 +1,64 @@
+{
+  "profile": "mini-wallet",
+  "plan": "oid4vci-1_0-wallet-test-plan",
+  "planId": "lQkO4HDr2mwL7",
+  "variant": "sd_jwt_vc / authorization_code / deferred",
+  "timestamp": "2026-11-12T21:29:37.213Z",
+  "planDetailUrl": "https://localhost.emobix.co.uk:8443/plan-detail.html?plan=lQkO4HDr2mwL7",
+  "total": 4,
+  "passed": 4,
+  "failed": 0,
+  "modules": [
+    {
+      "module": "oid4vci-1_0-wallet-test-credential-issuance",
+      "status": "FINISHED",
+      "result": "PASSED",
+      "passed": true,
+      "conditions": {
+        "INFO": 20,
+        "SUCCESS": 203
+      },
+      "failures": []
+    },
+    {
+      "module": "oid4vci-1_0-wallet-test-credential-issuance-notification",
+      "status": "FINISHED",
+      "result": "PASSED",
+      "passed": true,
+      "conditions": {
+        "INFO": 23,
+        "SUCCESS": 220
+      },
+      "failures": []
+    },
+    {
+      "module": "oid4vci-1_0-wallet-happy-path-with-scopes-without-authorization-details-in-token-response",
+      "status": "FINISHED",
+      "result": "PASSED",
+      "passed": true,
+      "conditions": {
+        "INFO": 20,
+        "SUCCESS": 202
+      },
+      "failures": []
+    },
+    {
+      "module": "oid4vci-1_0-wallet-test-batch-credential-issuance",
+      "status": "FINISHED",
+      "result": "PASSED",
+      "passed": true,
+      "conditions": {
+        "INFO": 20,
+        "SUCCESS": 205
+      },
+      "failures": []
+    }
+  ],
+  "metadata": {
+    "targetRepo": "sirosfoundation/siros-wallet-core",
+    "runId": "43306978133",
+    "actor": "leifj",
+    "sha": "18398883998b1735f045d82000e5f456dfb3949c",
+    "ref": "refs/tags/v0.2.4"
+  }
+}
