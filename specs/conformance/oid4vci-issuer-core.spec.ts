@@ -22,7 +22,7 @@ import { fileURLToPath } from 'url';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
-import { ConformanceAPI, type TestState } from '../../helpers/conformance-api';
+import { ConformanceAPI, type LogEntry, type TestState } from '../../helpers/conformance-api';
 import { SignJWT, importJWK } from 'jose';
 import * as crypto from 'node:crypto';
 
@@ -270,6 +270,52 @@ async function checkCoreIssuerHealth(): Promise<boolean> {
 // Tests
 // =============================================================================
 
+/**
+ * Wait for a pre-authorized module to be ready for its NEXT offer
+ * delivery: either the module FINISHED (return 'finished' — the caller
+ * must not deliver again), or the module logged a fresh
+ * "Waiting for call to credential offer endpoint" marker past the number
+ * of offers already accepted (return 'next-client').
+ *
+ * Keying on the MARKER COUNT rather than the sampled state is the point:
+ * the module logs one marker per client, and the marker only appears once
+ * the previous client's flow fully completed. The module's state stays
+ * WAITING THROUGH each client's processing — sampling the state after a
+ * delivery answers WAITING while the flow is still mid-run, and a fast
+ * module (CI timing) then accepts the next delivery before its current
+ * one completes, or after it FINISHED — the illegal FINISHED -> RUNNING
+ * state change flips the verdict (observed live: the suite log shows the
+ * third offer arriving at "Test has run to completion" + 1).
+ */
+async function waitForOfferSlot(
+  api: ConformanceAPI,
+  moduleId: string,
+  acceptedOffers: number,
+  timeoutMs: number
+): Promise<'finished' | 'next-client' | 'timeout'> {
+  const deadline = Date.now() + timeoutMs;
+  while (Date.now() < deadline) {
+    try {
+      const info = await api.getModuleInfo(moduleId);
+      if (info.status === 'FINISHED') return 'finished';
+      if (info.status === 'INTERRUPTED') return 'finished';
+    } catch {
+      /* transient suite error during a state change — retry */
+    }
+    try {
+      const log = await api.getTestLog(moduleId);
+      const markers = log.filter((l: LogEntry) =>
+        (l.msg || '').includes('Waiting for call to credential offer endpoint')
+      ).length;
+      if (markers > acceptedOffers) return 'next-client';
+    } catch {
+      /* transient — retry */
+    }
+    await new Promise((r) => setTimeout(r, 500));
+  }
+  return 'timeout';
+}
+
 test.describe('OID4VCI Issuer Conformance Suite (siros-issuer-core)', () => {
   const api = new ConformanceAPI(CONFORMANCE_URL);
   let conformanceReady = false;
@@ -422,20 +468,26 @@ test.describe('OID4VCI Issuer Conformance Suite (siros-issuer-core)', () => {
                 console.log(
                   `Module ${moduleName}: offer #${offerNo + 1} delivery -> ${delivered.status}`
                 );
-                let nextState: TestState | null = null;
-                try {
-                  nextState = await api.waitForState(
-                    moduleId,
-                    ['WAITING', 'FINISHED'],
-                    60000
-                  );
-                } catch (error) {
+                // A refused delivery (the module has no client left to
+                // feed) is not an error — its verdict stands.
+                if (delivered.status >= 400) break;
+                // Wait for the module to be ready for the NEXT offer:
+                // either it FINISHED (the verdict stands — never deliver
+                // again), or it logged a fresh wait-for-offer marker.
+                // The modules log ONE marker per client, and the marker
+                // only appears after the previous client's flow fully
+                // completed — a bare state sample is a race (WAITING
+                // holds THROUGH each client's processing, so a fast
+                // module invites over-delivery: proven live on CI, a
+                // third offer landed on a FINISHED module and the
+                // illegal state change flipped the verdict).
+                const slot = await waitForOfferSlot(api, moduleId, offerNo + 1, 90000);
+                if (slot !== 'next-client') {
                   console.log(
-                    `Module ${moduleName} interrupted/timed out awaiting offer acceptance: ${(error as Error).message}`
+                    `Module ${moduleName}: no further offer slot (${slot})`
                   );
                   break;
                 }
-                if (nextState !== 'WAITING') break;
               }
             } else {
               // Wallet-initiated: the module PARs and exposes
