@@ -107,11 +107,28 @@ identifier and nextUpdate ≤ 90 days.
 
 ## P2 scope — COMPLETE: the OIDF suite passes fully
 
-**11/14 modules PASSED, 3 SKIPPED, 0 FAILED — both grant variants**
-(pre-authorized/issuer-initiated and authorization-code/wallet-initiated,
-dpop, plain encryption). The skips are profile scope: unsigned metadata
-(`-signed` test), batch endpoint not advertised, key attestations not
-configured.
+**13/14 modules PASSED, 1 SKIPPED, 0 FAILED — all four variants**
+(sd_jwt_vc and mso_mdoc × pre-authorized/issuer-initiated and
+authorization-code/wallet-initiated, dpop, plain encryption). The one
+skip is profile scope: key attestations not configured.
+
+The two formerly-skipped modules now PASS: the `-signed` metadata test
+(the issuer-core x5c work made the signed metadata verifiable) and the
+batch endpoint (advertised and issued). Verified both locally and on
+the issuer-core repo's CI workflow (run 43451126802, 2026-11-13) —
+the CI conformance pipeline is WIRED AND GREEN: the workflow builds
+the issuer image, brings up this compose stack, drives the OIDF suite
+through the issuer spec, exports the certification ZIPs + run
+summaries as artifacts, and (on release tags) uploads them to the
+release for the conformance.siros.org pull publish.
+
+One spec fix the CI wiring forced (commit b6f2239): the pre-auth offer
+delivery loop keys on the module's per-client
+"Waiting for call to credential offer endpoint" log markers, never on
+a sampled state — the state stays WAITING through each client's
+processing, so a fast module invites over-delivery (observed on CI:
+offer #3 landed on a FINISHED module and the illegal state change
+flipped multiple-clients to FAILED).
 
 Both OID4VCI grants are implemented (design doc §7):
 
