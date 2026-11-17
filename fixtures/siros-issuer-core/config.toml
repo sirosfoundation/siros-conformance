@@ -15,6 +15,17 @@ url = "https://issuer.conformance.example.com:9443"
 # Local-test-only: go-trust-allow and the dev portal are plain HTTP on the
 # compose network (mirrors verifier-core's fixture escape hatch).
 allow_insecure_url = true
+# The explicit opt-out (issuer-core issue #21): the issuer's production
+# default is response_encryption_required = true — encryption is used
+# as much as possible, wallets can always use it. This fixture turns it
+# OFF deliberately: the OIDF plan's plain variants (the credential
+# responses without credential_response_encryption) are exactly the
+# coverage this profile exists to run. The suites are still always
+# advertised (alg_values_supported) — wallets that offer encryption
+# interop unchanged. A to_wallet opening is refused in the clear
+# EITHER way (endpoint-enforced, knob-independent) — this fixture
+# carries no rulebooks, so the secrets rule never bites here.
+response_encryption_required = false
 
 [authorization]
 # Mode A login handoff (design §7.2): the conformance dev portal. The
